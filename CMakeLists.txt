@@ -19,4 +19,5 @@ add_subdirectory(test)
 add_subdirectory(tools)
 
 target_link_libraries(homo
-    ${CMAKE_PROJECT_NAME}_lib)
+    ${CMAKE_PROJECT_NAME}_lib
+    homolog)
