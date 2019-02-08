@@ -1,7 +1,9 @@
-#include <stdio.h>
+#include <gba.h>
 #include <log.h>
+#include <stdio.h>
 
 int main(int argc, char** argv) {
-  log_trace("Hello World!");
+  init_gba("../test/SUPERMAR.GBA");
+  dele_gba();
   return 0;
 }
