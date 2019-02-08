@@ -4,3 +4,9 @@
 [submodule "test/lib/googletest"]
 	path = test/lib/googletest
 	url = https://github.com/google/googletest
+[submodule "tools/log.c"]
+	path = tools/log.c
+	url = https://github.com/rxi/log.c.git
+[submodule "tools/log/log.c"]
+	path = tools/log/log.c
+	url = https://github.com/rxi/log.c.git

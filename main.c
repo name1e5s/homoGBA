@@ -1,6 +1,7 @@
 #include <stdio.h>
+#include <log.h>
 
 int main(int argc, char** argv) {
-  printf("Hello world!\n");
+  log_trace("Hello World!");
   return 0;
 }

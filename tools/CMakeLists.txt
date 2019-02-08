@@ -1,1 +1,1 @@
-add_subdirectory(homolog)
+add_subdirectory(log)

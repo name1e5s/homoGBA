@@ -13,6 +13,8 @@ set(SOURCE_FILES main.c)
 add_executable(homo ${SOURCE_FILES})
 
 include_directories(include)
+include_directories(tools/log/log.c/src)
+
 
 add_subdirectory(src)
 add_subdirectory(test)
@@ -20,4 +22,4 @@ add_subdirectory(tools)
 
 target_link_libraries(homo
     ${CMAKE_PROJECT_NAME}_lib
-    homolog)
+        log)
