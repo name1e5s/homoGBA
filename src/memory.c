@@ -2,9 +2,9 @@
 #include <memory.h>
 #include <stdbool.h>
 // Default value. Write to REG_WAITCNT will change them.
-static uint32_t wait_cycle_seq[16] = {0, 0, 2, 0, 0, 0, 0, 0,
+uint32_t wait_cycle_seq[16] = {0, 0, 2, 0, 0, 0, 0, 0,
                                       2, 2, 4, 4, 8, 8, 4, 4};
-static uint32_t wait_cycle_nonseq[16] = {0, 0, 2, 0, 0, 0, 0, 0,
+uint32_t wait_cycle_nonseq[16] = {0, 0, 2, 0, 0, 0, 0, 0,
                                          4, 4, 4, 4, 4, 4, 4, 4};
 
 const bool bus_is_16[16] = {0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1};
