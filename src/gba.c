@@ -1,4 +1,5 @@
 #include <cartridge.h>
+#include <cpu.h>
 #include <gba.h>
 #include <stdlib.h>
 
@@ -7,6 +8,9 @@ int init_gba(const char* path) {
   memory.rom_wait0 = gamepak;
   memory.rom_wait1 = gamepak;
   memory.rom_wait2 = gamepak;
+
+  init_cpu();
+
 }
 
 void dele_gba() {

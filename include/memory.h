@@ -41,6 +41,6 @@ uint32_t get_access_cycles(bool seq, bool quad, uint32_t address);
   uint##bit##_t memory_read_##bit(uint32_t address); \
   void memory_write_##bit(uint32_t address, uint##bit##_t value);
 
-    DECL_MEM(32) DECL_MEM(16) DECL_MEM(8)
+DECL_MEM(32) DECL_MEM(16) DECL_MEM(8)
 
 #endif

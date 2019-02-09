@@ -4,7 +4,7 @@ set(HEADER_FILES
 )
 set(SOURCE_FILES
     version.c
-        gba.c cartridge.c memory.c)
+        cartridge.c memory.c gba.c cpu.c)
 
 # The library contains header and source files.
 add_library(${CMAKE_PROJECT_NAME}_lib STATIC
