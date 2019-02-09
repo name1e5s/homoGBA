@@ -22,6 +22,8 @@ typedef struct homo_memory {
   uint8_t* rom_wait2;
 } memory_t;
 
+extern memory_t memory;
+
 uint32_t get_access_cycles(bool seq, bool quad, uint32_t address);
 // IN COMPILER WE TRUST
 #define get_access_cycles_nonseq(quad, address) \
