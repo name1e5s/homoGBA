@@ -1,11 +1,9 @@
 #ifndef GBA_H
 #define GBA_H
+#include <memory.h>
 #include <stdint.h>
 typedef struct homo_gba {
-  // External Memory (Game Pak)
-  uint8_t* rom_wait0;
-  uint8_t* rom_wait1;
-  uint8_t* rom_wait2;
+  memory_t memory;
 } gba;
 
 extern gba _gba;
