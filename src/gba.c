@@ -27,7 +27,6 @@ int init_gba(const char* path) {
   memory.rom_wait2 = gamepak;
 
   init_cpu();
-
 }
 
 void dele_gba() {

@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #ifndef CPU_H
 #define CPU_H
 #include <macros.h>
@@ -67,11 +66,39 @@ typedef struct homo_cpu {
 
 extern cpu_t cpu;
 
-#define F_N BIT(cpu.CPSR, 31)
-#define F_Z BIT(cpu.CPSR, 30)
-#define F_C BIT(cpu.CPSR, 29)
-#define F_V BIT(cpu.CPSR, 28)
+#define F_N (BIT(cpu.CPSR, 31))
+#define F_Z (BIT(cpu.CPSR, 30))
+#define F_C (BIT(cpu.CPSR, 29))
+#define F_V (BIT(cpu.CPSR, 28))
 
 #define F_EXEC BIT(cpu.CPSR, 5)  // 0 as ARM, 1 as THUMB
+
+// Conditions
+#define COND_EQ (F_Z)
+#define COND_NE (!F_Z)
+#define COND_CS (F_C)
+#define COND_CC (!F_C)
+#define COND_MI (F_N)
+#define COND_PL (!F_N)
+#define COND_VS (F_V)
+#define COND_VC (!F_V)
+#define COND_HI (F_C && !F_Z)
+#define COND_LS (!F_C || F_Z)
+#define COND_GE (!F_N == !F_V)
+#define COND_LT (!F_N != !F_V)
+#define COND_GT (!F_Z && !F_N == !F_V)
+#define COND_LE (F_Z || !F_N != !F_V)
+#define COND_AL 1
+
+#define SIGN(N) ((N) >> 31)
+
+#define CARRY_ADD(M, N, D) \
+  (((uint32_t)(M) >> 31) + ((uint32_t)(N) >> 31) > ((uint32_t)(D) >> 31))
+#define BORROW_SUB(M, N, D) (((uint32_t)(M)) >= ((uint32_t)(N)))
+#define BORROW_SUB_CARRY(M, N, D, C) (UXT_64(M) >= (UXT_64(N)) + (uint64_t)(C))
+#define V_ADD(M, N, D) \
+  (!(SIGN((M) ^ (N))) && (SIGN((M) ^ (D))) && (SIGN((N) ^ (D))))
+#define V_SUB(M, N, D) ((SIGN((M) ^ (N))) && (SIGN((M) ^ (D))))
+
 void init_cpu(void);
 #endif

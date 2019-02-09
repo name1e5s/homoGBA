@@ -19,4 +19,10 @@
 #define MACROS_H
 #define _K *1024
 #define BIT(VAL, N) ((VAL >> N) & 0x1)
+#define REP_2(BODY) BODY, BODY
+#define REP_4(BODY) BODY, BODY, BODY, BODY
+#define REP_8(BODY) REP_2(REP_4(BODY))
+#define REP_16(BODY) REP_4(REP_4(BODY))
+#define REP_64(BODY) REP_4(REP_4(REP_4(BODY)))
+#define REP_256(BODY) REP_4(REP_4(REP_4(REP_4(BODY))))
 #endif
