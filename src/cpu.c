@@ -17,7 +17,7 @@
  */
 #include <cpu.h>
 #include <cpu-arm.h>
-#include "arm_table_generator.h"
+
 cpu_t cpu;
 
 void init_cpu(void) {
