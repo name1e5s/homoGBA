@@ -22,6 +22,6 @@
 #include <memory.h>
 #include <stdint.h>
 
-int init_gba(const char* path);
-void dele_gba();
+int gba_init(const char* path);
+void gba_delete();
 #endif

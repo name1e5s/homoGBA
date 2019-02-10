@@ -92,6 +92,7 @@ extern cpu_t cpu;
 
 #define SIGN(N) ((N) >> 31)
 
+// Flags
 #define CARRY_ADD(M, N, D) \
   (((uint32_t)(M) >> 31) + ((uint32_t)(N) >> 31) > ((uint32_t)(D) >> 31))
 #define BORROW_SUB(M, N, D) (((uint32_t)(M)) >= ((uint32_t)(N)))
@@ -100,5 +101,5 @@ extern cpu_t cpu;
   (!(SIGN((M) ^ (N))) && (SIGN((M) ^ (D))) && (SIGN((N) ^ (D))))
 #define V_SUB(M, N, D) ((SIGN((M) ^ (N))) && (SIGN((M) ^ (D))))
 
-void init_cpu(void);
+void cpu_init(void);
 #endif

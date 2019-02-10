@@ -20,15 +20,15 @@
 #include <gba.h>
 #include <stdlib.h>
 
-int init_gba(const char* path) {
-  uint8_t* gamepak = load_cartridge(path);
+int gba_init(const char* path) {
+  uint8_t* gamepak = cartridge_load(path);
   memory.rom_wait0 = gamepak;
   memory.rom_wait1 = gamepak;
   memory.rom_wait2 = gamepak;
 
-  init_cpu();
+  cpu_init();
 }
 
-void dele_gba() {
+void gba_delete() {
   free(memory.rom_wait0);
 }

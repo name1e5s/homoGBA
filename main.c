@@ -20,7 +20,7 @@
 #include <stdio.h>
 
 int main(int argc, char** argv) {
-  init_gba("../test/SUPERMAR.GBA");
-  dele_gba();
+    gba_init("../test/SUPERMAR.GBA");
+    gba_delete();
   return 0;
 }

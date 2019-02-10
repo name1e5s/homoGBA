@@ -41,7 +41,7 @@ const static uint8_t nintendo_logo[156] = {
 
 static bool check_header(uint8_t* rom);
 
-uint8_t* load_cartridge(const char* path) {
+uint8_t* cartridge_load(const char* path) {
   FILE* fp = fopen(path, "r");
   if (fp == NULL) {
     log_error("Load file %s failed.", path);

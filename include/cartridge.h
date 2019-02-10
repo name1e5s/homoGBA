@@ -40,5 +40,5 @@ typedef struct homo_cartridge_header {
   uint32_t joybus_entry;
 } cartridge_header;
 
-uint8_t* load_cartridge(const char* path);
+uint8_t* cartridge_load(const char* path);
 #endif

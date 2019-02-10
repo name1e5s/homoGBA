@@ -15,12 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <cpu-isa.h>
 #include <cpu.h>
-#include <cpu-arm.h>
 
 cpu_t cpu;
 
-void init_cpu(void) {
+void cpu_init(void) {
   cpu.exec_mode = EXEC_ARM;
   cpu.R[R_SP] = 0x03007F00;
   cpu.R[R_LR] = 0x08000000;

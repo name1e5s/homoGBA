@@ -15,3 +15,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <cpu-isa.h>
+#include <cpu.h>
+#include <log.h>
+#include <memory.h>
+#include <stdbool.h>
+
+#define DECL(INSTR) static inline void arm_##INSTR(uint32_t opcode)
+
+#define CALL(INSTR) arm_##INSTR(opcode)
+
+int64_t cpu_run_arm(int64_t clocks) {
+  while (clocks > 0) {
+    bool isSeq = (cpu.PC_old + 4 == cpu.R[R_PC]);
+    cpu.PC_old = cpu.R[R_PC];
+
+    uint32_t opcode = memory_read_32(cpu.R[R_PC]);
+
+    uint8_t kase = (uint8_t)((opcode >> 0x18) & (BIT(opcode, 5)));
+    switch (kase) {
+      default:
+        log_warn("cpu: Unknown instruction 0x%x.", opcode);
+        break;
+    }
+    cpu.R[R_PC] += 4;
+  }
+  return clocks;
+}

@@ -18,5 +18,5 @@
 #ifndef CPU_ARM_H
 #define CPU_ARM_H
 #include <stdint.h>
-
+int64_t cpu_run_arm(int64_t clocks);
 #endif
