@@ -37,7 +37,7 @@ typedef enum {
 #define DECL_REG(MODE) \
   uint32_t R13_##MODE; \
   uint32_t R14_##MODE; \
-  uint32_t SPSR_##MODE;
+  cpsr SPSR_##MODE;
 
 #define R_SP (13)
 #define R_LR (14)
@@ -79,5 +79,6 @@ typedef struct homo_cpu {
 extern cpu_t cpu;
 
 void cpu_init(void);
+void cpu_set_mode(uint32_t mode);
 int64_t cpu_run_arm(int64_t clocks);
 #endif

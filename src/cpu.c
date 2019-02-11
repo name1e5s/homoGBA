@@ -36,3 +36,76 @@ void cpu_init(void) {
 
   cpu.PC_old = 0;
 }
+
+#define SAVE_REG(MODE)            \
+  for (int i = 0; i < 5; i++)     \
+    cpu.R_user[i] = cpu.R[i + 8]; \
+  cpu.R13_##MODE = cpu.R[13];     \
+  cpu.R14_##MODE = cpu.R[14];     \
+  cpu.SPSR_##MODE = cpu.SPSR;
+
+#define LOAD_REG(MODE)            \
+  for (int i = 0; i < 5; i++)     \
+    cpu.R[i + 8] = cpu.R_user[i]; \
+  cpu.R[13] = cpu.R13_##MODE;     \
+  cpu.R[14] = cpu.R14_##MODE;     \
+  cpu.SPSR = cpu.SPSR_##MODE;
+
+void cpu_set_mode(uint32_t mode) {
+  if (cpu.CPSR.M == mode)
+    return;
+
+  // Save Registers
+  if (cpu.CPSR.M == MODE_USER || cpu.CPSR.M == MODE_SYSTEM)
+    for (int i = 0; i < 7; i++)
+      cpu.R_user[i] = cpu.R[i + 8];
+
+  if (cpu.CPSR.M == MODE_FIQ) {
+    for (int i = 0; i < 7; i++)
+      cpu.R_fiq[i] = cpu.R[i + 8];
+    cpu.SPSR_fiq = cpu.SPSR;
+  }
+
+  if (cpu.CPSR.M == MODE_IRQ) {
+    SAVE_REG(irq)
+  }
+  if (cpu.CPSR.M == MODE_SUPERVISOR) {
+    SAVE_REG(svc)
+  }
+
+  if (cpu.CPSR.M == MODE_ABORT) {
+    SAVE_REG(abt)
+  }
+
+  if (cpu.CPSR.M == MODE_UNDEFINED) {
+    SAVE_REG(und)
+  }
+
+  cpu.CPSR.M = mode;
+
+  // Load Registers
+  if (cpu.CPSR.M == MODE_USER || cpu.CPSR.M == MODE_SYSTEM)
+    for (int i = 0; i < 7; i++)
+      cpu.R[i + 8] = cpu.R_user[i];
+
+  if (cpu.CPSR.M == MODE_FIQ) {
+    for (int i = 0; i < 7; i++)
+      cpu.R[i + 8] = cpu.R_fiq[i];
+    cpu.SPSR_fiq = cpu.SPSR;
+  }
+
+  if (cpu.CPSR.M == MODE_IRQ) {
+    LOAD_REG(irq)
+  }
+  if (cpu.CPSR.M == MODE_SUPERVISOR) {
+    LOAD_REG(svc)
+  }
+
+  if (cpu.CPSR.M == MODE_ABORT) {
+    LOAD_REG(abt)
+  }
+
+  if (cpu.CPSR.M == MODE_UNDEFINED) {
+    LOAD_REG(und)
+  }
+}
