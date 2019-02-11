@@ -26,7 +26,9 @@ void cpu_init(void) {
   cpu.R[R_LR] = 0x08000000;
   cpu.R[R_PC] = 0x08000000;
 
-  cpu.CPSR = MODE_SUPERVISOR | (1 << 7) | (1 << 6);
+  cpu.CPSR.M = MODE_SUPERVISOR;
+  cpu.CPSR.F = 1;
+  cpu.CPSR.I = 1;
 
   cpu.R_user[5] = 0x03007F00;
   cpu.R13_svc = 0x03007FE0;

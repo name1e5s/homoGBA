@@ -43,20 +43,32 @@ typedef enum {
 #define R_LR (14)
 #define R_PC (15)
 
+typedef struct cpsr {
+  unsigned N : 1;
+  unsigned Z : 1;
+  unsigned C : 1;
+  unsigned V : 1;
+  unsigned Q : 1;
+  unsigned I : 1;
+  unsigned F : 1;
+  unsigned T : 1;
+  unsigned M : 5;
+} cpsr;
+
 typedef struct homo_cpu {
   cpu_exec_mode exec_mode;
   cpu_mode mode;
 
   uint32_t R[16];
-  uint32_t CPSR;
-  uint32_t SPSR;
+  cpsr CPSR;
+  cpsr SPSR;
 
   uint32_t PC_old;
 
   uint32_t R_user[7];
 
   uint32_t R_fiq[7];
-  uint32_t SPSR_fiq;
+  cpsr SPSR_fiq;
 
   DECL_REG(svc)
   DECL_REG(abt)
@@ -66,40 +78,6 @@ typedef struct homo_cpu {
 
 extern cpu_t cpu;
 
-#define F_N (BIT(cpu.CPSR, 31))
-#define F_Z (BIT(cpu.CPSR, 30))
-#define F_C (BIT(cpu.CPSR, 29))
-#define F_V (BIT(cpu.CPSR, 28))
-
-#define F_EXEC BIT(cpu.CPSR, 5)  // 0 as ARM, 1 as THUMB
-
-// Conditions
-#define COND_EQ (F_Z)
-#define COND_NE (!F_Z)
-#define COND_CS (F_C)
-#define COND_CC (!F_C)
-#define COND_MI (F_N)
-#define COND_PL (!F_N)
-#define COND_VS (F_V)
-#define COND_VC (!F_V)
-#define COND_HI (F_C && !F_Z)
-#define COND_LS (!F_C || F_Z)
-#define COND_GE (!F_N == !F_V)
-#define COND_LT (!F_N != !F_V)
-#define COND_GT (!F_Z && !F_N == !F_V)
-#define COND_LE (F_Z || !F_N != !F_V)
-#define COND_AL 1
-
-#define SIGN(N) ((N) >> 31)
-
-// Flags
-#define CARRY_ADD(M, N, D) \
-  (((uint32_t)(M) >> 31) + ((uint32_t)(N) >> 31) > ((uint32_t)(D) >> 31))
-#define BORROW_SUB(M, N, D) (((uint32_t)(M)) >= ((uint32_t)(N)))
-#define BORROW_SUB_CARRY(M, N, D, C) (UXT_64(M) >= (UXT_64(N)) + (uint64_t)(C))
-#define V_ADD(M, N, D) \
-  (!(SIGN((M) ^ (N))) && (SIGN((M) ^ (D))) && (SIGN((N) ^ (D))))
-#define V_SUB(M, N, D) ((SIGN((M) ^ (N))) && (SIGN((M) ^ (D))))
-
 void cpu_init(void);
+int64_t cpu_run_arm(int64_t clocks);
 #endif

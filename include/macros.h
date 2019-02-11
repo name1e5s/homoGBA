@@ -18,8 +18,8 @@
 #ifndef MACROS_H
 #define MACROS_H
 #define _K *1024
-#define BIT(VAL, N) ((VAL >> N) & 0x1)
-#define ONE(N) (1 << N)
+#define BIT(VAL, N) (((VAL) >> (N)) & 0x1)
+#define ONE(N) (1 << (N))
 #define REP_2(BODY) BODY, BODY
 #define REP_4(BODY) BODY, BODY, BODY, BODY
 #define REP_8(BODY) REP_2(REP_4(BODY))
