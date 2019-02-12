@@ -183,4 +183,26 @@ static inline uint32_t ror_by_reg_carry(uint32_t value, uint8_t shift) {
     return value;
 }
 
+#define SHIFT_BY(M, CARRY)                            \
+  static inline uint32_t cpu_shift_by_##M##CARRY(     \
+      uint32_t type, uint32_t value, uint8_t shift) { \
+    switch (type & 0x3) {                             \
+      case 0:                                         \
+        return lsl_by_##M##CARRY(value, shift);       \
+      case 1:                                         \
+        return lsr_by_##M##CARRY(value, shift);       \
+      case 2:                                         \
+        return asr_by_##M##CARRY(value, shift);       \
+      case 3:                                         \
+        return ror_by_##M##CARRY(value, shift);       \
+      default:                                        \
+        return 0;                                     \
+    }                                                 \
+    return 0;                                         \
+  }
+
+SHIFT_BY(imm, )
+SHIFT_BY(imm, _carry)
+SHIFT_BY(reg, )
+SHIFT_BY(reg, _carry)
 #endif
