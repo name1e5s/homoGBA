@@ -37,7 +37,12 @@
     if (Rn == R_PC)                                          \
       Rn_val += 8;                                           \
     uint32_t imm = build_imm(val, ror);                      \
-    BODY if (Rd == R_PC) cpu.R[Rd] -= 4;                     \
+    BODY F_N = (N);                                          \
+    F_Z = (Z);                                               \
+    F_C = (C);                                               \
+    F_V = (V);                                               \
+    if (Rd == R_PC)                                          \
+      cpu.R[Rd] -= 4;                                        \
   }                                                          \
   static inline void arm_##INSN##s_imm(uint32_t opcode) {    \
     uint32_t Rd = (opcode >> 12) & 0xF;                      \
@@ -151,6 +156,73 @@ ALU_3OP_IMM(bic,
             _carry,
             ,
             cpu.R[Rd] = Rn_val & (~imm);)
+ALU_3OP_IMM(mov,
+            BIT(cpu.R[Rd], 31),
+            cpu.R[Rd] == 0,
+            F_C,
+            F_V,
+            _carry,
+            ,
+            cpu.R[Rd] = imm;)
+ALU_3OP_IMM(mvn,
+            BIT(cpu.R[Rd], 31),
+            cpu.R[Rd] == 0,
+            F_C,
+            F_V,
+            _carry,
+            ,
+            cpu.R[Rd] = ~imm;)
+#define ALU_2OP_IMM(INSN, N, Z, C, V, CARRY, PRE_BODY, BODY) \
+  static inline void arm_##INSN##_imm(uint32_t opcode) {     \
+    uint32_t R = (opcode >> 16) & 0xF;                       \
+    uint32_t val = (opcode & 0xFF);                          \
+    uint32_t ror = (opcode >> 7) & 0x1E;                     \
+    PRE_BODY                                                 \
+    uint32_t imm = build_imm##CARRY(val, ror);               \
+    uint32_t R_val = cpu.R[R];                               \
+    if (R == R_PC)                                           \
+      R_val += 8;                                            \
+    BODY F_N = (N);                                          \
+    F_Z = (Z);                                               \
+    F_C = (C);                                               \
+    F_V = (V);                                               \
+  }
+
+ALU_2OP_IMM(tst,
+            BIT(tmp, 31),
+            tmp == 0,
+            F_C,
+            F_V,
+            _carry,
+            ,
+            uint32_t tmp = R_val & imm;)
+ALU_2OP_IMM(teq,
+            BIT(tmp, 31),
+            tmp == 0,
+            F_C,
+            F_V,
+            _carry,
+            ,
+            uint32_t tmp = R_val ^ imm;)
+
+ALU_2OP_IMM(cmp,
+            BIT(temp, 31),
+            temp == 0,
+            (tmp >> 32) != 0,
+            V_ADD(R_val, (uint32_t)(uint64_t)(~imm), temp) != 0,
+            ,
+            ,
+            uint64_t tmp = (uint64_t)R_val + (uint64_t)(~imm) + 1ULL;
+            uint32_t temp = (uint32_t)tmp;)
+ALU_2OP_IMM(cmn,
+            BIT(temp, 31),
+            temp == 0,
+            (tmp >> 32) != 0,
+            V_ADD(R_val, imm, temp) != 0,
+            ,
+            ,
+            uint64_t tmp = (uint64_t)(R_val) + (uint64_t)(imm);
+            uint32_t temp = (uint32_t)tmp;)
 
 int64_t cpu_run_arm(int64_t clocks) {
   while (clocks > 0) {
