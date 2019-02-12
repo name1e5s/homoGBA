@@ -81,4 +81,5 @@ extern cpu_t cpu;
 void cpu_init(void);
 void cpu_set_mode(uint32_t mode);
 int64_t cpu_run_arm(int64_t clocks);
+int64_t cpu_run_thumb(int64_t clocks);
 #endif

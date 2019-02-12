@@ -92,6 +92,21 @@
   ALU_3OP_ELEM(rsi, cpu_shift_by_imm, INSN, N, Z, C, V, CARRY, PRE_BODY, BODY, \
                15, shift, Rm_val, value)
 
+#define ALU_3OP_KASE(INSN)                               \
+  do {                                                   \
+    arm_##INSN(opcode);                                  \
+    clocks -= get_access_cycles(isSeq, 1, cpu.R[R_PC]);  \
+    if (((opcode >> 12) & 0xF) == 0xF) {                 \
+      clocks -= get_access_cycles_seq32(cpu.R[R_PC]) +   \
+                get_access_cycles_nonseq32(cpu.R[R_PC]); \
+      if (cpu.CPSR.T == 1) {                             \
+        cpu.exec_mode = EXEC_THUMB;                      \
+        cpu.R[R_PC] += 4;                                \
+        return cpu_run_thumb(clocks);                    \
+      }                                                  \
+    }                                                    \
+  } while (0)
+
 ALU_3OP_BLOCK(and,
               BIT(cpu.R[Rd], 31),
               cpu.R[Rd] == 0,
@@ -229,6 +244,12 @@ ALU_3OP_BLOCK(mvn,
                12, shift, Rm_val, Rs_val)                                      \
   ALU_2OP_ELEM(rsi, cpu_shift_by_imm, INSN, N, Z, C, V, CARRY, PRE_BODY, BODY, \
                15, shift, Rm_val, value)
+
+#define ALU_2OP_KASE(INSN)                              \
+  do {                                                  \
+    arm_##INSN(opcode);                                 \
+    clocks -= get_access_cycles(isSeq, 1, cpu.R[R_PC]); \
+  } while (0)
 
 ALU_2OP_BLOCK(tst,
               BIT(tmp, 31),
