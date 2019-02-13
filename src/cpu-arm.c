@@ -92,7 +92,7 @@
   ALU_3OP_ELEM(rsi, cpu_shift_by_imm, INSN, N, Z, C, V, CARRY, PRE_BODY, BODY, \
                15, shift, Rm_val, value)
 
-#define ALU_3OP_KASE(INSN)                               \
+#define ALU_3OP(INSN)                                    \
   do {                                                   \
     arm_##INSN(opcode);                                  \
     clocks -= get_access_cycles(isSeq, 1, cpu.R[R_PC]);  \
@@ -245,7 +245,7 @@ ALU_3OP_BLOCK(mvn,
   ALU_2OP_ELEM(rsi, cpu_shift_by_imm, INSN, N, Z, C, V, CARRY, PRE_BODY, BODY, \
                15, shift, Rm_val, value)
 
-#define ALU_2OP_KASE(INSN)                              \
+#define ALU_2OP(INSN)                                   \
   do {                                                  \
     arm_##INSN(opcode);                                 \
     clocks -= get_access_cycles(isSeq, 1, cpu.R[R_PC]); \
@@ -287,19 +287,67 @@ ALU_2OP_BLOCK(cmn,
               uint64_t tmp = (uint64_t)(R_val) + (uint64_t)(imm);
               uint32_t temp = (uint32_t)tmp;)
 
+#define ALU_BLOCK(TYPE, S)        \
+  switch ((opcode >> 21) & 0xF) { \
+    case 0x0:                     \
+      ALU_3OP(and##S_##TYPE);     \
+      break;                      \
+    case 0x1:                     \
+      ALU_3OP(eor##S_##TYPE);     \
+      break;                      \
+    case 0x2:                     \
+      ALU_3OP(sub##S_##TYPE);     \
+      break;                      \
+    case 0x3:                     \
+      ALU_3OP(rsb##S_##TYPE);     \
+      break;                      \
+    case 0x4:                     \
+      ALU_3OP(add##S_##TYPE);     \
+      break;                      \
+    case 0x5:                     \
+      ALU_3OP(adc##S_##TYPE);     \
+      break;                      \
+    case 0x6:                     \
+      ALU_3OP(sbc##S_##TYPE);     \
+      break;                      \
+    case 0x7:                     \
+      ALU_3OP(rsc##S_##TYPE);     \
+      break;                      \
+    case 0x8:                     \
+      ALU_2OP(tst_##TYPE);        \
+      break;                      \
+    case 0x9:                     \
+      ALU_2OP(teq_##TYPE);        \
+      break;                      \
+    case 0xA:                     \
+      ALU_2OP(cmp_##TYPE);        \
+      break;                      \
+    case 0xB:                     \
+      ALU_2OP(cmn_##TYPE);        \
+      break;                      \
+    case 0xC:                     \
+      ALU_3OP(orr##S_##TYPE);     \
+      break;                      \
+    case 0xD:                     \
+      ALU_3OP(mov##S_##TYPE);     \
+      break;                      \
+    case 0xE:                     \
+      ALU_3OP(bic##S_##TYPE);     \
+      break;                      \
+    case 0xF:                     \
+      ALU_3OP(mvn##S_##TYPE);     \
+      break;                      \
+    default:                      \
+      break;                      \
+  }
+
 int64_t cpu_run_arm(int64_t clocks) {
   while (clocks > 0) {
     bool isSeq = (cpu.PC_old + 4 == cpu.R[R_PC]);
     cpu.PC_old = cpu.R[R_PC];
 
-    uint32_t opcode = memory_read_32(cpu.R[R_PC]);
-
-    uint8_t kase = (uint8_t)((opcode >> 0x18) & (BIT(opcode, 5)));
-    switch (kase) {
-      default:
-        log_warn("cpu: Unknown instruction 0x%x.", opcode);
-        break;
-    }
+    register uint32_t opcode = memory_read_32(cpu.R[R_PC]);
+    // TODO: Use if-else structure to determine a instruction.
     cpu.R[R_PC] += 4;
   }
   return clocks;
