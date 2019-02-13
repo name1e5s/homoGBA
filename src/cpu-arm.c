@@ -347,7 +347,39 @@ int64_t cpu_run_arm(int64_t clocks) {
     cpu.PC_old = cpu.R[R_PC];
 
     register uint32_t opcode = memory_read_32(cpu.R[R_PC]);
-    // TODO: Use if-else structure to determine a instruction.
+    // Inspired by GNU libopcodes.
+    /* --- BEGIN DECODING --- */
+    if ((opcode & 0xfe000000) ==
+        0xfa000000) {  // Branch and Branch with Link (B, BL, BLX_imm)
+      uint32_t nn = opcode & 0x00FFFFFF;
+      if (BIT(nn, 23))
+        nn |= 0xFF000000;
+      if (BIT(opcode, 24))
+        cpu.R[R_LR] = cpu.R[R_PC] + 4;
+      cpu.R[R_PC] += 8 + (nn << 2) - 4;
+      clocks -= get_access_cycles(isSeq, 1, cpu.PC_old) +
+                get_access_cycles_seq32(cpu.R[R_PC]) +
+                get_access_cycles_nonseq32(cpu.R[R_PC]);
+    } else if ((opcode & 0x0fffff00) ==
+               0x012fff00) {  // Branch and Exchange (BX, BLX_reg)
+      uint32_t Rn = opcode & 0xF;
+      if (BIT(opcode, 5))
+        cpu.R[R_LR] = cpu.R[R_PC] + 4;
+
+      if (cpu.R[Rn] & 0x1) {
+        cpu.exec_mode = EXEC_THUMB;
+        cpu.CPSR.T = 1;
+        cpu.R[R_PC] = (cpu.R[Rn] + (Rn == R_PC ? 8 : 0)) & (~1);
+        clocks -= get_access_cycles(isSeq, 1, cpu.PC_old) * 2 +
+                  get_access_cycles_nonseq32(cpu.R[R_PC]);
+        return cpu_run_thumb(clocks);
+      }
+
+      cpu.R[R_PC] = (cpu.R[Rn] + (Rn == R_PC ? 8 : 0)) & (~3) - 4;
+      clocks -= get_access_cycles(isSeq, 1, cpu.PC_old) * 2 +
+                get_access_cycles_nonseq32(cpu.R[R_PC]);
+    } // TODO: PSR
+    /* ---  END DECODING  --- */
     cpu.R[R_PC] += 4;
   }
   return clocks;
