@@ -426,7 +426,15 @@ DECL(single_swap) {
 }
 
 DECL(swi) {
-  // TODO:
+  cpu_set_mode(MODE_SUPERVISOR);
+  cpu.R[R_LR] = cpu.R[R_PC] + 4;
+  cpu.SPSR = cpu.CPSR;
+  cpu.CPSR.I = 1;
+  cpu.CPSR.T = 0;
+  cpu.R[R_PC] = 4;
+  clocks -= get_access_cycles_seq32(cpu.R[R_PC]) +
+            get_access_cycles_nonseq32(cpu.R[R_PC]) +
+            get_access_cycles(isSeq, 1, cpu.PC_old);
 }
 
 DECL(ill) {
