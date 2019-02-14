@@ -21,10 +21,41 @@
 #include <memory.h>
 #include <stdbool.h>
 
-#define DECL(INSTR) static inline void arm_##INSTR(uint32_t opcode)
+#define DECL(BLOCK) static void arm_##BLOCK(uint32_t opcode)
+typedef void (*arm_block)(uint32_t opcode);
 
-#define CALL(INSTR) arm_##INSTR(opcode)
+bool isSeq;
 
+DECL(branch_and_exchange) {
+  uint32_t Rn = opcode & 0xF;
+  if (BIT(opcode, 5))
+    cpu.R[R_LR] = cpu.R[R_PC] + 4;
+
+  if (cpu.R[Rn] & 0x1) {
+    cpu.exec_mode = EXEC_THUMB;
+    cpu.CPSR.T = 1;
+    cpu.R[R_PC] = (cpu.R[Rn] + (Rn == R_PC ? 8 : 0)) & (~1);
+    clocks -= get_access_cycles(isSeq, 1, cpu.PC_old) * 2 +
+              get_access_cycles_nonseq32(cpu.R[R_PC]);
+    cpu_run_thumb(clocks);
+  }
+
+  cpu.R[R_PC] = (cpu.R[Rn] + (Rn == R_PC ? 8 : 0)) & (~3) - 4;
+  clocks -= get_access_cycles(isSeq, 1, cpu.PC_old) * 2 +
+            get_access_cycles_nonseq32(cpu.R[R_PC]);
+}
+
+DECL(branch_with_link) {
+  uint32_t nn = opcode & 0x00FFFFFF;
+  if (BIT(nn, 23))
+    nn |= 0xFF000000;
+  if (BIT(opcode, 24))
+    cpu.R[R_LR] = cpu.R[R_PC] + 4;
+  cpu.R[R_PC] += 8 + (nn << 2) - 4;
+  clocks -= (get_access_cycles(isSeq, 1, cpu.PC_old) +
+             get_access_cycles_seq32(cpu.R[R_PC]) +
+             get_access_cycles_nonseq32(cpu.R[R_PC]));
+}
 // ALU Instructions.
 #define ALU_3OP_ELEM(SHIFTNAME, SHIFT, INSN, N, Z, C, V, CARRY, PRE_BODY, \
                      BODY, NUM, ...)                                      \
@@ -290,28 +321,28 @@ ALU_2OP_BLOCK(cmn,
 #define ALU_BLOCK(TYPE, S)        \
   switch ((opcode >> 21) & 0xF) { \
     case 0x0:                     \
-      ALU_3OP(and##S_##TYPE);     \
+      ALU_3OP(and##S##_##TYPE);   \
       break;                      \
     case 0x1:                     \
-      ALU_3OP(eor##S_##TYPE);     \
+      ALU_3OP(eor##S##_##TYPE);   \
       break;                      \
     case 0x2:                     \
-      ALU_3OP(sub##S_##TYPE);     \
+      ALU_3OP(sub##S##_##TYPE);   \
       break;                      \
     case 0x3:                     \
-      ALU_3OP(rsb##S_##TYPE);     \
+      ALU_3OP(rsb##S##_##TYPE);   \
       break;                      \
     case 0x4:                     \
-      ALU_3OP(add##S_##TYPE);     \
+      ALU_3OP(add##S##_##TYPE);   \
       break;                      \
     case 0x5:                     \
-      ALU_3OP(adc##S_##TYPE);     \
+      ALU_3OP(adc##S##_##TYPE);   \
       break;                      \
     case 0x6:                     \
-      ALU_3OP(sbc##S_##TYPE);     \
+      ALU_3OP(sbc##S##_##TYPE);   \
       break;                      \
     case 0x7:                     \
-      ALU_3OP(rsc##S_##TYPE);     \
+      ALU_3OP(rsc##S##_##TYPE);   \
       break;                      \
     case 0x8:                     \
       ALU_2OP(tst_##TYPE);        \
@@ -326,61 +357,149 @@ ALU_2OP_BLOCK(cmn,
       ALU_2OP(cmn_##TYPE);        \
       break;                      \
     case 0xC:                     \
-      ALU_3OP(orr##S_##TYPE);     \
+      ALU_3OP(orr##S##_##TYPE);   \
       break;                      \
     case 0xD:                     \
-      ALU_3OP(mov##S_##TYPE);     \
+      ALU_3OP(mov##S##_##TYPE);   \
       break;                      \
     case 0xE:                     \
-      ALU_3OP(bic##S_##TYPE);     \
+      ALU_3OP(bic##S##_##TYPE);   \
       break;                      \
     case 0xF:                     \
-      ALU_3OP(mvn##S_##TYPE);     \
+      ALU_3OP(mvn##S##_##TYPE);   \
       break;                      \
     default:                      \
       break;                      \
   }
 
-int64_t cpu_run_arm(int64_t clocks) {
+DECL(data_processing) {
+  int64_t clocks = 0;
+  switch (((BIT(opcode, 25) << 1) | (BIT(opcode, 20)))) {
+    case 0:
+      ALU_BLOCK(imm, )
+      break;
+    case 1:
+      ALU_BLOCK(imm, s)
+      break;
+    case 2:
+      if (BIT(opcode, 4)) {
+        ALU_BLOCK(rsr, )
+      } else {
+        ALU_BLOCK(rsi, )
+      }
+      break;
+    case 3:
+      if (BIT(opcode, 4)) {
+        ALU_BLOCK(rsr, s)
+      } else {
+        ALU_BLOCK(rsi, s)
+      }
+      break;
+    default:
+      // Fuck clion.
+      break;
+  }
+}
+
+DECL(psr) {
+  // TODO:
+}
+
+DECL(multiply) {
+  // TODO:
+}
+
+DECL(single_transfer) {
+  // TODO:
+}
+
+DECL(half_transfer) {
+  // TODO:
+}
+
+DECL(block_transfer) {
+  // TODO:
+}
+
+DECL(single_swap) {
+  // TODO:
+}
+
+DECL(swi) {
+  // TODO:
+}
+
+DECL(ill) {
+  log_warn("Illegal opcode: 0x%8x", opcode);
+  clocks -= 100;  // Away from trap
+}
+static arm_block arm_code[] = {
+    arm_branch_and_exchange,
+    arm_branch_with_link,
+    arm_data_processing,
+    arm_psr,
+    arm_multiply,
+    arm_single_transfer,
+    arm_half_transfer,
+    arm_block_transfer,
+    arm_single_swap,
+    arm_swi,
+    arm_ill,
+};
+
+int8_t cpu_decode_arm(int32_t opcode) {
+  if ((opcode & 0x0FFFFF00) == 0x012FFF00) {
+    return 0;  // branch and exchange
+  } else if ((opcode & 0x0E000000) == 0x0A000000) {
+    return 1;  // branch with link
+  } else if ((opcode & 0xD900000) == 0x1000000) {
+    if (BIT(opcode, 7) && (BIT(opcode, 4) && !((BIT(opcode, 25))))) {
+      if (opcode & 0x00000060)
+        return 8;  // single data swap
+      else
+        return 6;  // halfword, doubleword, and signed data transfer
+    } else
+      return 3;  // psr instructions
+  } else if ((opcode & 0x0C000000) == 0) {
+    if (BIT(opcode, 7) && !(BIT(opcode, 4))) {
+      if ((opcode & 0x02000000) ||
+          ((opcode & 0x00100000) && (opcode & 0x01800000) == 0x01000000) ||
+          (opcode & 0x01800000) != 0x01000000)
+        return 2;  // data processing
+      else
+        return 4;  // multiply
+    } else if (BIT(opcode, 7) && BIT(opcode, 4)) {
+      if ((opcode & 0x000000F0) == 0x00000090) {
+        if ((opcode & 0x02000000))
+          return 2;  // data processing
+        else if ((opcode & 0x01800000) != 0x01000000)
+          return 8;  // single data swap
+        else
+          return 4;  // multiply
+      } else if ((opcode & 0x02000000))
+        return 2;  // data processing
+      else
+        return 6;  // halfword, doubleword, and signed data transfer
+    } else
+      return 2;  // data processing
+  } else if ((opcode & 0x0C000000) == 0x04000000)
+    return 5;  // single data transfer
+  else if ((opcode & 0x0E000000) == 0x08000000)
+    return 7;  // block aata transfer
+  else if ((opcode & 0x0F000000) == 0x0F000000)
+    return 9;  // swi
+  else
+    return 10;  // illegal instruction block
+}
+
+void cpu_run_arm(int64_t clock) {
+  clocks = clock;
   while (clocks > 0) {
-    bool isSeq = (cpu.PC_old + 4 == cpu.R[R_PC]);
+    isSeq = (cpu.PC_old + 4 == cpu.R[R_PC]);
     cpu.PC_old = cpu.R[R_PC];
 
     register uint32_t opcode = memory_read_32(cpu.R[R_PC]);
-    // Inspired by GNU libopcodes.
-    /* --- BEGIN DECODING --- */
-    if ((opcode & 0xfe000000) ==
-        0xfa000000) {  // Branch and Branch with Link (B, BL, BLX_imm)
-      uint32_t nn = opcode & 0x00FFFFFF;
-      if (BIT(nn, 23))
-        nn |= 0xFF000000;
-      if (BIT(opcode, 24))
-        cpu.R[R_LR] = cpu.R[R_PC] + 4;
-      cpu.R[R_PC] += 8 + (nn << 2) - 4;
-      clocks -= get_access_cycles(isSeq, 1, cpu.PC_old) +
-                get_access_cycles_seq32(cpu.R[R_PC]) +
-                get_access_cycles_nonseq32(cpu.R[R_PC]);
-    } else if ((opcode & 0x0fffff00) ==
-               0x012fff00) {  // Branch and Exchange (BX, BLX_reg)
-      uint32_t Rn = opcode & 0xF;
-      if (BIT(opcode, 5))
-        cpu.R[R_LR] = cpu.R[R_PC] + 4;
-
-      if (cpu.R[Rn] & 0x1) {
-        cpu.exec_mode = EXEC_THUMB;
-        cpu.CPSR.T = 1;
-        cpu.R[R_PC] = (cpu.R[Rn] + (Rn == R_PC ? 8 : 0)) & (~1);
-        clocks -= get_access_cycles(isSeq, 1, cpu.PC_old) * 2 +
-                  get_access_cycles_nonseq32(cpu.R[R_PC]);
-        return cpu_run_thumb(clocks);
-      }
-
-      cpu.R[R_PC] = (cpu.R[Rn] + (Rn == R_PC ? 8 : 0)) & (~3) - 4;
-      clocks -= get_access_cycles(isSeq, 1, cpu.PC_old) * 2 +
-                get_access_cycles_nonseq32(cpu.R[R_PC]);
-    } // TODO: PSR
-    /* ---  END DECODING  --- */
+    arm_code[cpu_decode_arm(opcode)](opcode);
     cpu.R[R_PC] += 4;
   }
-  return clocks;
 }

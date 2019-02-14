@@ -78,8 +78,11 @@ typedef struct homo_cpu {
 
 extern cpu_t cpu;
 
+// TODO: Not a good practice.
+extern int64_t clocks;
+
 void cpu_init(void);
 void cpu_set_mode(uint32_t mode);
-int64_t cpu_run_arm(int64_t clocks);
-int64_t cpu_run_thumb(int64_t clocks);
+void cpu_run_arm(int64_t clock);
+void cpu_run_thumb(int64_t clock);
 #endif
