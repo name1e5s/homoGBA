@@ -469,8 +469,142 @@ DECL(psr) {
   clocks -= get_access_cycles(isSeq, 1, cpu.R[R_PC]);
 }
 
+#define MUL_SET_FLAG             \
+  cpu.CPSR.Z = (cpu.R[Rd] == 0); \
+  cpu.CPSR.N = BIT(cpu.R[Rd], 31);
+
+static inline void arm_mul(uint32_t opcode) {
+  uint32_t Rd = (opcode >> 16) & 0xF;
+  uint32_t Rs = (opcode >> 8) & 0xF;
+  uint32_t Rm = opcode & 0xF;
+  cpu.R[Rd] = (uint32_t)((int32_t)cpu.R[Rs] * (int32_t)cpu.R[Rm]);
+}
+
+static inline void arm_muls(uint32_t opcode) {
+  uint32_t Rd = (opcode >> 16) & 0xF;
+  uint32_t Rs = (opcode >> 8) & 0xF;
+  uint32_t Rm = opcode & 0xF;
+  cpu.R[Rd] = (uint32_t)((int32_t)cpu.R[Rs] * (int32_t)cpu.R[Rm]);
+  MUL_SET_FLAG
+}
+
+static inline void arm_mla(uint32_t opcode) {
+  uint32_t Rd = (opcode >> 16) & 0xF;
+  uint32_t Rn = (opcode >> 12) & 0xF;
+  uint32_t Rs = (opcode >> 8) & 0xF;
+  uint32_t Rm = opcode & 0xF;
+  cpu.R[Rd] =
+      (uint32_t)((int32_t)cpu.R[Rs] * (int32_t)cpu.R[Rm] + (int32_t)cpu.R[Rn]);
+}
+
+static inline void arm_mlas(uint32_t opcode) {
+  uint32_t Rd = (opcode >> 16) & 0xF;
+  uint32_t Rn = (opcode >> 12) & 0xF;
+  uint32_t Rs = (opcode >> 8) & 0xF;
+  uint32_t Rm = opcode & 0xF;
+  cpu.R[Rd] =
+      (uint32_t)((int32_t)cpu.R[Rs] * (int32_t)cpu.R[Rm] + (int32_t)cpu.R[Rn]);
+  MUL_SET_FLAG
+}
+
+#define MULL(INSN, EXPR)                              \
+  static inline void arm_##INSN(uint32_t opcode) {    \
+    uint32_t RdHi = (opcode >> 16) & 0xF;             \
+    uint32_t RdLo = (opcode >> 12) & 0xF;             \
+    uint32_t Rs = (opcode >> 8) & 0xF;                \
+    uint32_t Rm = opcode & 0xF;                       \
+    uint64_t tmp = (uint64_t)(EXPR);                  \
+                                                      \
+    cpu.R[RdHi] = (uint32_t)(tmp >> 32);              \
+    cpu.R[RdLo] = (uint32_t)(tmp);                    \
+  }                                                   \
+  static inline void arm_##INSN##s(uint32_t opcode) { \
+    uint32_t RdHi = (opcode >> 16) & 0xF;             \
+    uint32_t RdLo = (opcode >> 12) & 0xF;             \
+    uint32_t Rs = (opcode >> 8) & 0xF;                \
+    uint32_t Rm = opcode & 0xF;                       \
+    uint64_t tmp = (uint64_t)(EXPR);                  \
+                                                      \
+    cpu.R[RdHi] = (uint32_t)(tmp >> 32);              \
+    cpu.R[RdLo] = (uint32_t)(tmp);                    \
+    cpu.CPSR.Z = (tmp == 0);                          \
+    cpu.CPSR.N = BIT(cpu.R[RdHi], 31);                \
+  }
+
+MULL(umull, (uint64_t)cpu.R[Rs] * (uint64_t)cpu.R[Rm])
+MULL(umlal,
+     (((uint64_t)cpu.R[Rm]) * ((uint64_t)cpu.R[Rs])) +
+         ((((uint64_t)cpu.R[RdHi]) << 32) | (uint64_t)cpu.R[RdLo]))
+MULL(smull,
+     (int64_t)((int64_t)(int32_t)cpu.R[Rm] * (int64_t)(int32_t)cpu.R[Rs]))
+MULL(smlal,
+     (((int64_t)(int32_t)cpu.R[Rm]) * ((int64_t)(int32_t)cpu.R[Rs])) +
+         ((((uint64_t)cpu.R[RdHi]) << 32) | (uint64_t)cpu.R[RdLo]))
+
+static inline int64_t signed_mul_cycles(uint32_t opcode) {
+  uint32_t data = cpu.R[(opcode >> 16) & 0xF];
+  if (BIT(data, 31))
+    data = ~data;
+  if (data & 0xFF000000)
+    return 4;
+  if (data & 0x00FF0000)
+    return 3;
+  if (data & 0x0000FF00)
+    return 2;
+  return 1;
+}
+
+static inline int64_t unsigned_mul_cycles(uint32_t opcode) {
+  uint32_t data = cpu.R[(opcode >> 16) & 0xF];
+  if (data & 0xFF000000)
+    return 4;
+  if (data & 0x00FF0000)
+    return 3;
+  if (data & 0x0000FF00)
+    return 2;
+  return 1;
+}
+
+#define MUL_BLOCK(INSN, CLOCK) \
+  do {                         \
+    if (BIT(opcode, 20))       \
+      arm_##INSN##s(opcode);   \
+    else                       \
+      arm_##INSN(opcode);      \
+    clocks -= CLOCK;           \
+  } while (0)
+
 DECL(multiply) {
-  // TODO:
+  switch ((opcode >> 21) & 0xF) {
+    case 0:
+      MUL_BLOCK(mul, get_access_cycles(isSeq, 1, cpu.R[R_PC]) +
+                         signed_mul_cycles(opcode));
+      break;
+    case 1:
+      MUL_BLOCK(mla, get_access_cycles(isSeq, 1, cpu.R[R_PC]) +
+                         signed_mul_cycles(opcode) + 1);
+      break;
+    case 4:
+      MUL_BLOCK(umull, get_access_cycles(isSeq, 1, cpu.R[R_PC]) +
+                           unsigned_mul_cycles(opcode) + 1);
+      break;
+    case 5:
+      MUL_BLOCK(umlal, get_access_cycles(isSeq, 1, cpu.R[R_PC]) +
+                           unsigned_mul_cycles(opcode) + 2);
+      break;
+    case 6:
+      MUL_BLOCK(smull, get_access_cycles(isSeq, 1, cpu.R[R_PC]) +
+                           signed_mul_cycles(opcode) + 1);
+      break;
+    case 7:
+      MUL_BLOCK(smlal, get_access_cycles(isSeq, 1, cpu.R[R_PC]) +
+                           signed_mul_cycles(opcode) + 2);
+      break;
+    default:  // UNDEF
+      cpu.R[R_PC] -= 4;
+      clocks -= 100;
+      break;
+  }
 }
 
 DECL(single_transfer) {
