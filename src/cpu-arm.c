@@ -607,8 +607,190 @@ DECL(multiply) {
   }
 }
 
+#define SG_PC                                           \
+  if (Rd == R_PC) {                                     \
+    clocks -= get_access_cycles_nonseq32(cpu.R[R_PC]) + \
+              get_access_cycles_seq32(cpu.R[R_PC]);     \
+    cpu.R[R_PC] -= 4;                                   \
+  }
+
 DECL(single_transfer) {
-  // TODO:
+  uint32_t Rn = ((opcode >> 16) & 0xF);
+  uint32_t Rd = ((opcode >> 12) & 0xF);
+  uint32_t Rn_val = cpu.R[Rn] + (Rn == R_PC ? 8 : 0);
+  uint32_t Rd_val = cpu.R[Rn] + (Rn == R_PC ? 12 : 0);
+  int32_t offset = 0;
+  if (BIT(opcode, 25))
+    offset = cpu_shift_by_imm((opcode >> 5) & 0x3, cpu.R[opcode & 0xF],
+                              (uint8_t)(opcode >> 7) & 0x1F);
+  else
+    offset = opcode & 0x00000FFF;
+
+  switch ((opcode >> 20) & 0xFF) {
+    case 0x00:
+    case 0x02:
+      memory_write_32(Rn_val, Rd_val);
+      cpu.R[Rn] = Rn_val - offset;
+      clocks -= 2 * get_access_cycles_nonseq32(Rn_val);
+      break;
+    case 0x01:
+    case 0x03:
+      cpu.R[Rn] = Rn_val - offset;
+      cpu.R[Rd] = memory_read_32(Rn_val);
+      clocks -= get_access_cycles(isSeq, 1, cpu.PC_old) +
+                get_access_cycles_nonseq32(Rn_val) + 1;
+      SG_PC
+      break;
+    case 0x04:
+    case 0x06:
+      memory_write_8(Rn_val, (uint8_t)Rd_val);
+      cpu.R[Rn] = Rn_val - offset;
+      clocks -= 2 * get_access_cycles_nonseq16(Rn_val);
+      break;
+    case 0x05:
+    case 0x07:
+      cpu.R[Rn] = Rn_val - offset;
+      cpu.R[Rd] = memory_read_8(Rn_val);
+      clocks -= get_access_cycles(isSeq, 1, cpu.PC_old) +
+                get_access_cycles_nonseq16(Rn_val) + 1;
+      SG_PC
+      break;
+    case 0x08:
+    case 0x0A:
+      memory_write_32(Rn_val, Rd_val);
+      cpu.R[Rn] = Rn_val + offset;
+      clocks -= 2 * get_access_cycles_nonseq32(Rn_val);
+      break;
+    case 0x09:
+    case 0x0B:
+      cpu.R[Rn] = Rn_val + offset;
+      cpu.R[Rd] = memory_read_32(Rn_val);
+      clocks -= get_access_cycles(isSeq, 1, cpu.PC_old) +
+                get_access_cycles_nonseq32(Rn_val) + 1;
+      SG_PC
+      break;
+    case 0x0C:
+    case 0x0E:
+      memory_write_8(Rn_val, (uint8_t)Rd_val);
+      cpu.R[Rn] = Rn_val + offset;
+      clocks -= 2 * get_access_cycles_nonseq16(Rn_val);
+      break;
+    case 0x0D:
+    case 0x0F:
+      cpu.R[Rn] = Rn_val + offset;
+      cpu.R[Rd] = memory_read_8(Rn_val);
+      clocks -= get_access_cycles(isSeq, 1, cpu.PC_old) +
+                get_access_cycles_nonseq16(Rn_val) + 1;
+      SG_PC
+      break;
+    case 0x10:
+      Rn_val -= offset;
+      memory_write_32(Rn_val, Rd_val);
+      clocks -= 2 * get_access_cycles_nonseq32(Rn_val);
+      break;
+    case 0x11:
+      Rn_val -= offset;
+      cpu.R[Rd] = memory_read_32(Rn_val);
+      clocks -= get_access_cycles(isSeq, 1, cpu.PC_old) +
+                get_access_cycles_nonseq32(Rn_val) + 1;
+      SG_PC
+      break;
+    case 0x12:
+      Rn_val -= offset;
+      cpu.R[Rn] = Rn_val;
+      memory_write_32(Rn_val, Rd_val);
+      clocks -= 2 * get_access_cycles_nonseq32(Rn_val);
+      break;
+    case 0x13:
+      Rn_val -= offset;
+      cpu.R[Rn] = Rn_val;
+      cpu.R[Rd] = memory_read_32(Rn_val);
+      clocks -= get_access_cycles(isSeq, 1, cpu.PC_old) +
+                get_access_cycles_nonseq32(Rn_val) + 1;
+      SG_PC
+      break;
+    case 0x14:
+      Rn_val -= offset;
+      memory_write_8(Rn_val, (uint8_t)Rd_val);
+      clocks -= 2 * get_access_cycles_nonseq16(Rn_val);
+      break;
+    case 0x15:
+      Rn_val -= offset;
+      cpu.R[Rd] = memory_read_8(Rn_val);
+      clocks -= get_access_cycles(isSeq, 1, cpu.PC_old) +
+                get_access_cycles_nonseq16(Rn_val) + 1;
+      SG_PC
+      break;
+    case 0x16:
+      Rn_val -= offset;
+      cpu.R[Rn] = Rn_val;
+      memory_write_8(Rn_val, (uint8_t)Rd_val);
+      clocks -= 2 * get_access_cycles_nonseq16(Rn_val);
+      break;
+    case 0x17:
+      Rn_val -= offset;
+      cpu.R[Rn] = Rn_val;
+      cpu.R[Rd] = memory_read_8(Rn_val);
+      clocks -= get_access_cycles(isSeq, 1, cpu.PC_old) +
+                get_access_cycles_nonseq16(Rn_val) + 1;
+      SG_PC
+      break;
+    case 0x18:
+      Rn_val += offset;
+      memory_write_32(Rn_val, Rd_val);
+      clocks -= 2 * get_access_cycles_nonseq32(Rn_val);
+      break;
+    case 0x19:
+      Rn_val += offset;
+      cpu.R[Rd] = memory_read_32(Rn_val);
+      clocks -= get_access_cycles(isSeq, 1, cpu.PC_old) +
+                get_access_cycles_nonseq32(Rn_val) + 1;
+      SG_PC
+      break;
+    case 0x1A:
+      Rn_val += offset;
+      cpu.R[Rn] = Rn_val;
+      memory_write_32(Rn_val, Rd_val);
+      clocks -= 2 * get_access_cycles_nonseq32(Rn_val);
+      break;
+    case 0x1B:
+      Rn_val += offset;
+      cpu.R[Rn] = Rn_val;
+      cpu.R[Rd] = memory_read_32(Rn_val);
+      clocks -= get_access_cycles(isSeq, 1, cpu.PC_old) +
+                get_access_cycles_nonseq32(Rn_val) + 1;
+      SG_PC
+      break;
+    case 0x1C:
+      Rn_val += offset;
+      memory_write_8(Rn_val, (uint8_t)Rd_val);
+      clocks -= 2 * get_access_cycles_nonseq16(Rn_val);
+      break;
+    case 0x1D:
+      Rn_val += offset;
+      cpu.R[Rd] = memory_read_8(Rn_val);
+      clocks -= get_access_cycles(isSeq, 1, cpu.PC_old) +
+                get_access_cycles_nonseq16(Rn_val) + 1;
+      SG_PC
+      break;
+    case 0x1E:
+      Rn_val += offset;
+      cpu.R[Rn] = Rn_val;
+      memory_write_8(Rn_val, (uint8_t)Rd_val);
+      clocks -= 2 * get_access_cycles_nonseq16(Rn_val);
+      break;
+    case 0x1F:
+      Rn_val += offset;
+      cpu.R[Rn] = Rn_val;
+      cpu.R[Rd] = memory_read_8(Rn_val);
+      clocks -= get_access_cycles(isSeq, 1, cpu.PC_old) +
+                get_access_cycles_nonseq16(Rn_val) + 1;
+      SG_PC
+      break;
+    default:
+      // Fuck CLion.
+      break;
+  }
 }
 
 DECL(half_transfer) {
