@@ -612,7 +612,83 @@ DECL(single_transfer) {
 }
 
 DECL(half_transfer) {
-  // TODO:
+  uint32_t Rn = (opcode >> 16) & 0xF;
+  uint32_t Rd = (opcode >> 12) & 0xF;
+
+  uint32_t offset = 0;
+  uint32_t addr = cpu.R[Rn];
+  uint32_t val = 0;
+
+  if (BIT(opcode, 22))
+    offset = ((opcode >> 8) & 0xF) << 4 | (opcode & 0xF);
+  else
+    offset = cpu.R[opcode & 0xF];
+
+  if (BIT(opcode, 24)) {
+    if (BIT(opcode, 23))
+      addr += offset;
+    else
+      addr -= offset;
+  }
+
+  switch ((opcode >> 5) & 0x3) {
+    case 1:
+      if (BIT(opcode, 20)) {
+        val = memory_read_16(addr);
+        cpu.R[Rd] = val;
+        if (Rd == R_PC)
+          clocks -= get_access_cycles(isSeq, 1, cpu.R[R_PC]) +
+                    get_access_cycles_nonseq32(cpu.R[R_PC]);
+
+        clocks -= get_access_cycles(isSeq, 1, cpu.PC_old) +
+                  get_access_cycles_nonseq16(addr);
+
+      } else {
+        val = cpu.R[Rd];
+        if (Rd == R_PC) {
+          val += 4;
+        }
+        memory_write_32(addr, val & 0x0000FFFF);
+        clocks -= 2 * get_access_cycles_nonseq16(addr);
+      }
+      break;
+    case 2:
+      val = memory_read_8(addr);
+      if (BIT(val, 7))
+        val |= 0xFFFFFF00;
+
+      cpu.R[Rd] = val;
+      if (Rd == R_PC)
+        clocks -= get_access_cycles(isSeq, 1, cpu.R[R_PC]) +
+                  get_access_cycles_nonseq32(cpu.R[R_PC]);
+
+      clocks -= get_access_cycles(isSeq, 1, cpu.PC_old) +
+                get_access_cycles_nonseq16(addr);
+      break;
+    case 3:
+      val = memory_read_16(addr);
+      if (BIT(val, 15))
+        val |= 0xFFFF0000;
+
+      cpu.R[Rd] = val;
+      if (Rd == R_PC)
+        clocks -= get_access_cycles(isSeq, 1, cpu.R[R_PC]) +
+                  get_access_cycles_nonseq32(cpu.R[R_PC]);
+
+      clocks -= get_access_cycles(isSeq, 1, cpu.PC_old) +
+                get_access_cycles_nonseq16(addr);
+      break;
+    default:
+      return;
+  }
+  if (!BIT(opcode, 24)) {
+    if (BIT(opcode, 23))
+      addr += offset;
+    else
+      addr -= offset;
+  }
+  if (BIT(opcode, 21) && Rd != Rn)
+    cpu.R[Rn] = addr;
 }
 
 DECL(block_transfer) {
