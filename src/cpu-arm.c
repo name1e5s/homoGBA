@@ -373,7 +373,6 @@ ALU_2OP_BLOCK(cmn,
   }
 
 DECL(data_processing) {
-  int64_t clocks = 0;
   switch (((BIT(opcode, 25) << 1) | (BIT(opcode, 20)))) {
     case 0:
       ALU_BLOCK(imm, )
@@ -396,13 +395,78 @@ DECL(data_processing) {
       }
       break;
     default:
-      // Fuck clion.
+      // Fuck CLion.
       break;
   }
 }
 
 DECL(psr) {
-  // TODO:
+  switch ((opcode >> 20) & 0xFF) {
+      // MRS
+    case 0x10:
+      cpu.R[(opcode >> 12) & 0xF] = cpsr_to_uint(cpu.CPSR);
+      break;
+    case 0x14:
+      cpu.R[(opcode >> 12) & 0xF] = cpsr_to_uint(cpu.SPSR);
+      break;
+      // MSR
+    case 0x12: {
+      uint32_t data = cpu.R[opcode & 0xF];
+      uint32_t res = 0;
+      if (BIT(opcode, 19)) {
+        res |= data & 0xFF000000;
+        cpu.CPSR = uint_to_cpsr(cpsr_to_uint(cpu.CPSR) & 0x00FFFFFF);
+      }
+      if (cpu.CPSR.M != MODE_USER) {
+        if (BIT(opcode, 18)) {
+          res |= data & 0x00FF0000;
+          cpu.CPSR = uint_to_cpsr(cpsr_to_uint(cpu.CPSR) & 0XFF00FFFF);
+        }
+        if (BIT(opcode, 17)) {
+          res |= data & 0x0000FF00;
+          cpu.CPSR = uint_to_cpsr(cpsr_to_uint(cpu.CPSR) & 0xFFFF00FF);
+        }
+        if (BIT(opcode, 16)) {
+          res |= data & 0x000000FF;
+          cpu.CPSR = uint_to_cpsr(cpsr_to_uint(cpu.CPSR) & 0xFFFFFF00);
+          cpu.CPSR = uint_to_cpsr(cpsr_to_uint(cpu.CPSR) | res);
+          cpu_set_mode(res & 0x1F);
+        }
+      } else
+        cpu.CPSR = uint_to_cpsr(cpsr_to_uint(cpu.CPSR) | res);
+      break;
+    }
+    case 0x16: {
+      uint32_t data = cpu.R[opcode & 0xF];
+      uint32_t res = 0;
+      if (BIT(opcode, 19)) {
+        res |= data & 0xFF000000;
+        cpu.SPSR = uint_to_cpsr(cpsr_to_uint(cpu.SPSR) & 0x00FFFFFF);
+      }
+      if (cpu.SPSR.M != MODE_USER) {
+        if (BIT(opcode, 18)) {
+          res |= data & 0x00FF0000;
+          cpu.SPSR = uint_to_cpsr(cpsr_to_uint(cpu.SPSR) & 0XFF00FFFF);
+        }
+        if (BIT(opcode, 17)) {
+          res |= data & 0x0000FF00;
+          cpu.SPSR = uint_to_cpsr(cpsr_to_uint(cpu.SPSR) & 0xFFFF00FF);
+        }
+        if (BIT(opcode, 16)) {
+          res |= data & 0x000000FF;
+          cpu.SPSR = uint_to_cpsr(cpsr_to_uint(cpu.SPSR) & 0xFFFFFF00);
+          cpu.SPSR = uint_to_cpsr(cpsr_to_uint(cpu.SPSR) | res);
+          cpu_set_mode(res & 0x1F);
+        }
+      } else
+        cpu.SPSR = uint_to_cpsr(cpsr_to_uint(cpu.SPSR) | res);
+      break;
+    }
+    default:
+      // Fuck CLion.
+      break;
+  }
+  clocks -= get_access_cycles(isSeq, 1, cpu.R[R_PC]);
 }
 
 DECL(multiply) {

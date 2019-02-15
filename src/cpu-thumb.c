@@ -16,7 +16,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <cpu.h>
-int64_t cpu_run_thumb(int64_t clocks) {
+void cpu_run_thumb(int64_t clocks) {
   // TODO: The Thumb Mode
-  return clocks;
 }

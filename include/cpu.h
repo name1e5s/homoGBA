@@ -55,6 +55,27 @@ typedef struct cpsr {
   unsigned M : 5;
 } cpsr;
 
+static inline uint32_t cpsr_to_uint(cpsr reg) {
+  return (uint32_t)((reg.N << 31) | (reg.Z << 30) | (reg.C << 29) |
+                    (reg.V << 28) | (reg.Q << 27) | (reg.I << 7) |
+                    (reg.F << 6) | (reg.T << 5) | (reg.M));
+}
+
+static inline cpsr uint_to_cpsr(uint32_t data) {
+  cpsr reg = {
+      .N = BIT(data, 31),
+      .Z = BIT(data, 30),
+      .C = BIT(data, 29),
+      .V = BIT(data, 28),
+      .Q = BIT(data, 27),
+      .I = BIT(data, 7),
+      .F = BIT(data, 6),
+      .T = BIT(data, 5),
+      .M = data & 0xF,
+  };
+  return reg;
+}
+
 typedef struct homo_cpu {
   cpu_exec_mode exec_mode;
   cpu_mode mode;
