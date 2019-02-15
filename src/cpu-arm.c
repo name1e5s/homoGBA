@@ -620,7 +620,19 @@ DECL(block_transfer) {
 }
 
 DECL(single_swap) {
-  // TODO:
+  uint32_t val = cpu.R[opcode & 0xF];
+  uint32_t addr = cpu.R[(opcode >> 16) & 0xF];
+  uint32_t dist_reg = (opcode >> 12) & 0xF;
+  if (BIT(opcode, 22)) {
+    cpu.R[dist_reg] = memory_read_8(addr);
+    memory_write_8(addr, (uint8_t)val);
+  } else {
+    cpu.R[dist_reg] = memory_read_32(addr);
+    memory_write_32(addr, val);
+  }
+
+  clocks -= get_access_cycles(isSeq, 1, cpu.R[R_PC]) +
+            (get_access_cycles_nonseq32(addr) * 2) + 1;
 }
 
 DECL(swi) {
@@ -691,7 +703,7 @@ int8_t cpu_decode_arm(int32_t opcode) {
   } else if ((opcode & 0x0C000000) == 0x04000000)
     return 5;  // single data transfer
   else if ((opcode & 0x0E000000) == 0x08000000)
-    return 7;  // block aata transfer
+    return 7;  // block data transfer
   else if ((opcode & 0x0F000000) == 0x0F000000)
     return 9;  // swi
   else
