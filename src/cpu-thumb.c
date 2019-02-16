@@ -216,10 +216,24 @@ DECL(uncond_branch) {
   cpu.R[R_PC] += offset + 4;
   clocks -= get_access_cycles_nonseq16(cpu.R[R_PC]) +
             get_access_cycles_seq16(cpu.R[R_PC]);
+  cpu.R[R_PC] -= 2;
 }
 
 DECL(long_branch) {
-  // TODO:
+  if (BIT(opcode, 11)) {
+    uint32_t offset = ((uint32_t)opcode & 0x7FF) << 12;
+    if (BIT(opcode, 10))
+      offset |= 0xFF800000;
+    cpu.R[R_LR] = cpu.R[R_PC] + 4 + offset;
+    clocks -= get_access_cycles(isSeq, 0, cpu.R[R_PC]);
+  } else {
+    clocks -= get_access_cycles(isSeq, 0, cpu.R[R_PC]);
+    uint32_t temp = cpu.R[R_LR] + (((uint32_t)opcode & 0x7FF) << 1);
+    cpu.R[R_LR] = (cpu.R[R_PC] + 2) | 0x00000001;
+    cpu.R[R_PC] = temp;
+    clocks -= get_access_cycles_nonseq16(cpu.R[R_PC]) +
+              get_access_cycles_seq16(cpu.R[R_PC]);
+  }
 }
 
 DECL(swi) {
