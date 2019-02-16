@@ -97,8 +97,63 @@ DECL(add_sub) {
   clocks -= get_access_cycles(isSeq, 0, cpu.R[R_PC]);
 }
 
+#define MCI_PA                     \
+  uint16_t Rd = (opcode >> 8) & 7; \
+  uint16_t imm = opcode & 0xFF;
+
+static inline void thumb_mov_reg_imm(uint16_t opcode) {
+  MCI_PA
+  cpu.R[Rd] = imm;
+  SET_NZ(0, imm == 0)
+  clocks -= get_access_cycles(isSeq, 0, cpu.R[R_PC]);
+}
+
+static inline void thumb_cmp_reg_imm(uint16_t opcode) {
+  MCI_PA
+  uint64_t imm_ = (uint64_t)(uint32_t)(~imm) + 1;
+  uint64_t temp = (uint64_t)cpu.R[Rd] + imm_;
+  bool v = V_ADD(cpu.R[Rd], (uint32_t)(imm_ - 1), temp);
+  SET_F(cpu.R[Rd] >> 31, cpu.R[Rd] == 0, (temp >> 32) != 0, v)
+  clocks -= get_access_cycles(isSeq, 0, cpu.R[R_PC]);
+}
+
+static inline void thumb_add_reg_imm(uint16_t opcode) {
+  MCI_PA
+  uint64_t temp = (uint64_t)cpu.R[Rd] + (uint64_t)imm;
+  bool v = V_ADD(cpu.R[Rd], (uint32_t)(imm), temp);
+  cpu.R[Rd] = (uint32_t)temp;
+  SET_F(cpu.R[Rd] >> 31, cpu.R[Rd] == 0, (temp >> 32) != 0, v)
+  clocks -= get_access_cycles(isSeq, 0, cpu.R[R_PC]);
+}
+
+static inline void thumb_sub_reg_imm(uint16_t opcode) {
+  MCI_PA
+  uint64_t imm_ = (uint64_t)(uint32_t)(~imm) + 1;
+  uint64_t temp = (uint64_t)cpu.R[Rd] + imm_;
+  bool v = V_ADD(cpu.R[Rd], (uint32_t)(imm_ - 1), temp);
+  cpu.R[Rd] = (uint32_t)temp;
+  SET_F(cpu.R[Rd] >> 31, cpu.R[Rd] == 0, (temp >> 32) != 0, v)
+  clocks -= get_access_cycles(isSeq, 0, cpu.R[R_PC]);
+}
+
 DECL(move_compare_imm) {
-  // TODO:
+  switch ((opcode >> 11) & 3) {
+    case 0:
+      thumb_mov_reg_imm(opcode);
+      return;
+    case 1:
+      thumb_cmp_reg_imm(opcode);
+      return;
+    case 2:
+      thumb_add_reg_imm(opcode);
+      return;
+    case 4:
+      thumb_sub_reg_imm(opcode);
+      return;
+    default:
+      // fuck CLion.
+      break;
+  }
 }
 
 DECL(alu) {
