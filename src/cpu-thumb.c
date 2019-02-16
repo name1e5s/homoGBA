@@ -197,7 +197,12 @@ DECL(get_rel_addr) {
 }
 
 DECL(add_offset_sp) {
-  // TODO:
+  int32_t offset = (opcode & 0x7F) << 2;
+  if (BIT(opcode, 7))
+    cpu.R[R_SP] -= offset;
+  else
+    cpu.R[R_SP] += offset;
+  clocks -= get_access_cycles(isSeq, 0, cpu.R[R_PC]);
 }
 
 static inline uint32_t thumb_popcnt(uint32_t val) {
