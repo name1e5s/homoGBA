@@ -204,8 +204,39 @@ DECL(multiple_load_store) {
   // TODO:
 }
 
-DECL(cond_branch) {
-  // TODO:
+static inline bool thumb_cond(uint16_t opcode) {
+  switch ((opcode >> 8) & 0xF) {
+    case 0:
+      return COND(EQ);
+    case 1:
+      return COND(NE);
+    case 2:
+      return COND(CS);
+    case 3:
+      return COND(CC);
+    case 4:
+      return COND(MI);
+    case 5:
+      return COND(PL);
+    case 6:
+      return COND(VS);
+    case 7:
+      return COND(VC);
+    case 8:
+      return COND(HI);
+    case 9:
+      return COND(LS);
+    case 0xA:
+      return COND(GE);
+    case 0xB:
+      return COND(LT);
+    case 0xC:
+      return COND(GT);
+    case 0xD:
+      return COND(LE);
+    default:
+      return false;
+  }
 }
 
 DECL(uncond_branch) {
@@ -217,6 +248,13 @@ DECL(uncond_branch) {
   clocks -= get_access_cycles_nonseq16(cpu.R[R_PC]) +
             get_access_cycles_seq16(cpu.R[R_PC]);
   cpu.R[R_PC] -= 2;
+}
+
+DECL(cond_branch) {
+  if (thumb_cond(opcode))
+    thumb_uncond_branch((uint16_t)(opcode & 0x00FF));
+  else
+    clocks -= get_access_cycles(isSeq, 0, cpu.R[R_PC]);
 }
 
 DECL(long_branch) {

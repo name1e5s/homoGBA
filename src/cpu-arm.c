@@ -1414,7 +1414,7 @@ static arm_block arm_code[] = {
     arm_ill,
 };
 
-bool cond(opcode) {
+static inline bool cond(uint32_t opcode) {
   switch ((opcode >> 28) & 0xF) {
     case 0:
       return COND(EQ);
