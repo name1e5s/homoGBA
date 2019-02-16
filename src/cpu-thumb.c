@@ -193,7 +193,13 @@ DECL(load_store_sp_rel) {
 }
 
 DECL(get_rel_addr) {
-  // TODO:
+  uint32_t offset = (uint32_t)((opcode & 0xFF) << 2);
+  uint32_t Rd = (uint32_t)((opcode >> 8) & 3);
+  if (BIT(opcode, 11))
+    cpu.R[Rd] = cpu.R[R_SP] + offset;
+  else
+    cpu.R[Rd] = ((cpu.R[R_PC] + 4) & (~2)) + offset;
+  clocks -= get_access_cycles(isSeq, 0, cpu.R[R_PC]);
 }
 
 DECL(add_offset_sp) {
@@ -245,7 +251,7 @@ DECL(push_pop) {
           count++;
         }
       }
-      cpu.R[R_PC] = (cpu.R[R_PC] - 2) & (-1);
+      cpu.R[R_PC] = (cpu.R[R_PC] - 2) & (~1);
       clocks -= get_access_cycles(isSeq, 0, cpu.R[R_PC]) + 1 +
                 get_access_cycles_seq32(cpu.R[R_SP]) * (count - 1) +
                 get_access_cycles_nonseq32(cpu.R[R_SP]) +
