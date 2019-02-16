@@ -34,6 +34,10 @@
 #define DECL(BLOCK) static void thumb_##BLOCK(uint16_t opcode)
 typedef void (*thumb_block)(uint16_t opcode);
 
+#define LDM(ADDR, REG) cpu.R[REG] = memory_read_32((ADDR) & ~3)
+
+#define STM(ADDR, REG) memory_write_32((ADDR) & -3, cpu.R[REG])
+
 bool isSeq;
 
 DECL(move_shifted_register) {
@@ -196,8 +200,66 @@ DECL(add_offset_sp) {
   // TODO:
 }
 
+static inline uint32_t thumb_popcnt(uint32_t val) {
+  uint32_t count = 0;
+  while (val != 0) {
+    val &= val - 1;
+    count++;
+  }
+  return count;
+}
+
 DECL(push_pop) {
-  // TODO:
+  uint32_t regs = (uint32_t)(opcode & 0xFF);
+  uint32_t bit = thumb_popcnt(regs);
+  uint32_t addr = cpu.R[R_SP] - (bit << 2);
+  if (BIT(opcode, 11)) {
+    int up = 0;
+    cpu.R[R_SP] = addr;
+    if (BIT(opcode, 8))
+      up = 16;
+    else
+      up = 8;
+    for (int i = 0; i < up; i++) {
+      if (BIT(regs, i)) {
+        STM(addr, i);
+        addr += 4;
+      }
+    }
+    if (bit || BIT(opcode, 8))
+      clocks -= get_access_cycles_seq32(addr) * (bit - 1) +
+                get_access_cycles_nonseq32(addr);
+    clocks -= get_access_cycles_nonseq16(cpu.R[R_PC]);
+  } else {
+    uint32_t count = 0;
+    if (BIT(opcode, 8)) {
+      for (int i = 0; i < 16; i++) {
+        if (BIT(regs, i)) {
+          LDM(addr, i);
+          cpu.R[R_PC] += 4;
+          count++;
+        }
+      }
+      cpu.R[R_PC] = (cpu.R[R_PC] - 2) & (-1);
+      clocks -= get_access_cycles(isSeq, 0, cpu.R[R_PC]) + 1 +
+                get_access_cycles_seq32(cpu.R[R_SP]) * (count - 1) +
+                get_access_cycles_nonseq32(cpu.R[R_SP]) +
+                get_access_cycles_nonseq16(cpu.R[R_PC]) +
+                get_access_cycles_seq16(cpu.R[R_PC]);
+    } else {
+      for (int i = 0; i < 8; i++) {
+        if (BIT(regs, i)) {
+          LDM(addr, i);
+          cpu.R[R_PC] += 4;
+          count++;
+        }
+      }
+      clocks -= get_access_cycles(isSeq, 0, cpu.R[R_PC]) + 1;
+      if (count)
+        clocks -= get_access_cycles_seq32(cpu.R[R_SP]) * (count - 1) +
+                  get_access_cycles_nonseq32(cpu.R[R_SP]);
+    }
+  }
 }
 
 DECL(multiple_load_store) {
