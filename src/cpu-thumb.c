@@ -217,7 +217,17 @@ DECL(long_branch) {
 }
 
 DECL(swi) {
-  // TODO:
+  clocks -= get_access_cycles(isSeq, 0, cpu.R[R_PC]);
+  cpu.R14_svc = cpu.R[R_PC] + 2;
+  cpu.SPSR_svc = cpu.CPSR;
+  cpu_set_mode(MODE_SUPERVISOR);
+  cpu.exec_mode = EXEC_ARM;
+  cpu.CPSR.I = 1;
+  cpu.CPSR.T = 0;
+  cpu.CPSR.M = MODE_SUPERVISOR;
+  cpu.R[R_PC] = 0x8;
+  clocks -= get_access_cycles_nonseq16(cpu.R[R_PC]) +
+            get_access_cycles_seq16(cpu.R[R_PC]);
 }
 
 DECL(ill) {
