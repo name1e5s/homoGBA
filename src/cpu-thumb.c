@@ -169,7 +169,13 @@ DECL(hi_reg_bx) {
 }
 
 DECL(load_pc_rel) {
-  // TODO:
+  uint32_t offset = (uint32_t)((opcode & 0xFF) << 2);
+  uint32_t Rd = (uint32_t)((opcode >> 8) & 3);
+
+  uint32_t addr = (cpu.R[R_PC] + 4) & (-2) + offset;
+  cpu.R[Rd] = memory_read_32(addr);
+  clocks -= get_access_cycles(isSeq, 0, cpu.R[R_PC]) +
+            get_access_cycles_seq32(addr) + 1;
 }
 
 DECL(load_store_reg) {
