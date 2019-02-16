@@ -21,26 +21,40 @@
 #include <memory.h>
 #include <stdbool.h>
 
-#define DSIMM_PA                     \
-  uint16_t Rd = opcode & 0x7;        \
-  uint16_t Rs = (opcode >> 3) & 0x7; \
-  uint16_t imm = (opcode >> 6) & 0x1F;
+#define SET_F(SN, SZ, SC, SV) \
+  cpu.CPSR.N = (SN);          \
+  cpu.CPSR.Z = (SZ);          \
+  cpu.CPSR.C = (SC);          \
+  cpu.CPSR.V = (SV);
 
-#define SET_F(N, Z, C, V) \
-  cpu.CPSR.N = (N);       \
-  cpu.CPSR.Z = (Z);       \
-  cpu.CPSR.C = (C);       \
-  cpu.CPSR.V = (V);
+#define SET_NZC(SN, SZ, SC) SET_F(SN, SZ, SC, F_V)
 
-#define SET_NZC(N, Z, C) SET_F(N, Z, C, F_V)
-
-#define SET_NZ(N, Z) SET_NZC(N, Z, F_C)
+#define SET_NZ(SN, SZ) SET_F(SN, SZ, F_C, F_V)
 
 #define DECL(BLOCK) static void thumb_##BLOCK(uint16_t opcode)
 typedef void (*thumb_block)(uint16_t opcode);
 
+bool isSeq;
+
 DECL(move_shifted_register) {
-  // TODO:
+  uint16_t Rd = (uint16_t)(opcode & 0x7);
+  uint16_t Rs = (uint16_t)((opcode >> 3) & 0x7);
+  uint8_t imm = (uint8_t)((opcode >> 6) & 0x1F);
+  switch ((opcode >> 11) & 3) {
+    case 0:
+      cpu.R[Rd] = lsl_by_imm_carry(cpu.R[Rs], imm);
+      break;
+    case 1:
+      cpu.R[Rd] = lsr_by_imm_carry(cpu.R[Rs], imm);
+      break;
+    case 2:
+      cpu.R[Rd] = asr_by_imm_carry(cpu.R[Rs], imm);
+      break;
+    default:
+      break;
+  }
+  SET_NZ(BIT(cpu.R[Rd], 31), cpu.R[Rd] == 0)
+  clocks -= get_access_cycles(isSeq, 0, cpu.R[R_PC]);
 }
 
 DECL(add_sub) {
@@ -210,8 +224,10 @@ uint16_t decode(uint16_t opcode) {
 void cpu_run_thumb(int64_t clock) {
   clocks = clock;
   while (clocks > 0) {
-    bool isSeq = (cpu.PC_old + 2 == cpu.R[R_PC]);
+    isSeq = (cpu.PC_old + 2 == cpu.R[R_PC]);
     cpu.PC_old = cpu.R[R_PC];
     register uint16_t opcode = memory_read_16(cpu.R[R_PC]);
+    thumb_code[decode(opcode)](opcode);
+    cpu.R[R_PC] += 2;
   }
 }
