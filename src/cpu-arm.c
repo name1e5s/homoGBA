@@ -873,8 +873,499 @@ DECL(half_transfer) {
     cpu.R[Rn] = addr;
 }
 
+static inline int popcnt(uint32_t val) {
+  int count = 0;
+  while (val != 0) {
+    val &= val - 1;
+    count++;
+  }
+  return count;
+}
+
+#define BT_PA                         \
+  uint32_t Rn = (opcode >> 16) & 0xF; \
+  uint32_t addr = cpu.R[Rn];          \
+  uint32_t bit = popcnt(opcode & 0x0000FFFF);
+
+#define LDM(ADDR, REG) cpu.R[REG] = memory_read_32((ADDR) & ~3)
+
+#define STM(ADDR, REG) \
+  memory_write_32((ADDR) & -3, (cpu.R[REG] + ((REG) == R_PC ? 12 : 0)))
+
+#define STM_CLK                                       \
+  clocks -= get_access_cycles_nonseq32(cpu.R[R_PC]) + \
+            get_access_cycles_nonseq32(addr) +        \
+            get_access_cycles_seq32(addr) * (bit - 1);
+
+#define LDM_CLK                                         \
+  if (BIT(opcode, 15)) {                                \
+    clocks -= get_access_cycles_nonseq32(cpu.R[R_PC]) + \
+              get_access_cycles_seq32(cpu.R[R_PC]);     \
+    cpu.R[R_PC] -= 4;                                   \
+  } else                                                \
+    clocks -= get_access_cycles_nonseq32(addr) +        \
+              get_access_cycles_seq32(addr) * (bit - 1) + 1;
+
 DECL(block_transfer) {
-  // TODO:
+  switch ((opcode >> 20) & 0xFF) {
+    case 0x00: {
+      BT_PA
+      addr -= bit << 2;
+      for (int i = 0; i < 16; i++)
+        if (BIT(opcode, i)) {
+          addr += 4;
+          STM(addr, i);
+        }
+      STM_CLK
+    } break;
+    case 0x02: {
+      BT_PA
+      addr -= bit << 2;
+      bool flag = true;
+      for (int i = 0; i < 16; i++) {
+        if (BIT(opcode, i)) {
+          addr += 4;
+          STM(addr, i);
+          if (flag) {
+            cpu.R[Rn] = addr - 4;
+            flag = !flag;
+          }
+        }
+      }
+      STM_CLK
+    } break;
+    case 0x04: {
+      uint32_t oldmode = cpu.CPSR.M;
+      cpu_set_mode(MODE_USER);
+      BT_PA
+      addr -= bit << 2;
+      for (int i = 0; i < 16; i++)
+        if (BIT(opcode, i)) {
+          addr += 4;
+          STM(addr, i);
+        }
+      cpu_set_mode(oldmode);
+      STM_CLK
+    } break;
+    case 0x06: {
+      uint32_t oldmode = cpu.CPSR.M;
+      cpu_set_mode(MODE_USER);
+      BT_PA
+      addr -= bit << 2;
+      bool flag = true;
+      for (int i = 0; i < 16; i++) {
+        if (BIT(opcode, i)) {
+          addr += 4;
+          STM(addr, i);
+          if (flag) {
+            cpu.R[Rn] = addr - 4;
+            flag = !flag;
+          }
+        }
+      }
+      cpu_set_mode(oldmode);
+      STM_CLK
+    } break;
+    case 0x08: {
+      BT_PA
+      for (int i = 0; i < 16; i++)
+        if (BIT(opcode, i)) {
+          STM(addr, i);
+          addr += 4;
+        }
+      STM_CLK
+    } break;
+    case 0x0A: {
+      BT_PA
+      bool flag = true;
+      for (int i = 0; i < 16; i++) {
+        if (BIT(opcode, i)) {
+          STM(addr, i);
+          addr += 4;
+          if (flag) {
+            cpu.R[Rn] = addr - 4 + (bit << 2);
+            flag = !flag;
+          }
+        }
+      }
+      STM_CLK
+    } break;
+    case 0x0C: {
+      uint32_t oldmode = cpu.CPSR.M;
+      cpu_set_mode(MODE_USER);
+      BT_PA
+      for (int i = 0; i < 16; i++)
+        if (BIT(opcode, i)) {
+          STM(addr, i);
+          addr += 4;
+        }
+      cpu_set_mode(oldmode);
+      STM_CLK
+    } break;
+    case 0x0E: {
+      uint32_t oldmode = cpu.CPSR.M;
+      cpu_set_mode(MODE_USER);
+      BT_PA
+      bool flag = true;
+      for (int i = 0; i < 16; i++) {
+        if (BIT(opcode, i)) {
+          STM(addr, i);
+          addr += 4;
+          if (flag) {
+            cpu.R[Rn] = addr - 4 + (bit << 2);
+            flag = !flag;
+          }
+        }
+      }
+      cpu_set_mode(oldmode);
+      STM_CLK
+    } break;
+    case 0x10: {
+      BT_PA
+      addr -= bit << 2;
+      for (int i = 0; i < 16; i++)
+        if (BIT(opcode, i)) {
+          STM(addr, i);
+          addr += 4;
+        }
+      STM_CLK
+    } break;
+    case 0x12: {
+      BT_PA
+      addr -= bit << 2;
+      bool flag = true;
+      for (int i = 0; i < 16; i++) {
+        if (BIT(opcode, i)) {
+          STM(addr, i);
+          addr += 4;
+          if (flag) {
+            cpu.R[Rn] = addr - 4;
+            flag = !flag;
+          }
+        }
+      }
+      STM_CLK
+    } break;
+    case 0x14: {
+      uint32_t oldmode = cpu.CPSR.M;
+      cpu_set_mode(MODE_USER);
+      BT_PA
+      addr -= bit << 2;
+      for (int i = 0; i < 16; i++)
+        if (BIT(opcode, i)) {
+          STM(addr, i);
+          addr += 4;
+        }
+      cpu_set_mode(oldmode);
+      STM_CLK
+    } break;
+    case 0x16: {
+      uint32_t oldmode = cpu.CPSR.M;
+      cpu_set_mode(MODE_USER);
+      BT_PA
+      addr -= bit << 2;
+      bool flag = true;
+      for (int i = 0; i < 16; i++) {
+        if (BIT(opcode, i)) {
+          STM(addr, i);
+          addr += 4;
+          if (flag) {
+            cpu.R[Rn] = addr - 4;
+            flag = !flag;
+          }
+        }
+      }
+      cpu_set_mode(oldmode);
+      STM_CLK
+    } break;
+    case 0x18: {
+      BT_PA
+      for (int i = 0; i < 16; i++)
+        if (BIT(opcode, i)) {
+          addr += 4;
+          STM(addr, i);
+        }
+      STM_CLK
+    } break;
+    case 0x1A: {
+      BT_PA
+      bool flag = true;
+      for (int i = 0; i < 16; i++) {
+        if (BIT(opcode, i)) {
+          addr += 4;
+          STM(addr, i);
+          if (flag) {
+            cpu.R[Rn] = addr - 4 + bit << 2;
+            flag = !flag;
+          }
+        }
+      }
+      STM_CLK
+    } break;
+    case 0x1C: {
+      uint32_t oldmode = cpu.CPSR.M;
+      cpu_set_mode(MODE_USER);
+      BT_PA
+      for (int i = 0; i < 16; i++)
+        if (BIT(opcode, i)) {
+          addr += 4;
+          STM(addr, i);
+        }
+      cpu_set_mode(oldmode);
+      STM_CLK
+    } break;
+    case 0x1E: {
+      uint32_t oldmode = cpu.CPSR.M;
+      cpu_set_mode(MODE_USER);
+      BT_PA
+      bool flag = true;
+      for (int i = 0; i < 16; i++) {
+        if (BIT(opcode, i)) {
+          addr += 4;
+          STM(addr, i);
+          if (flag) {
+            cpu.R[Rn] = addr - 4 + (bit << 2);
+            flag = !flag;
+          }
+        }
+      }
+      cpu_set_mode(oldmode);
+      STM_CLK
+    } break;
+    case 0x01: {
+      BT_PA
+      addr -= bit << 2;
+      for (int i = 0; i < 16; i++)
+        if (BIT(opcode, i)) {
+          addr += 4;
+          LDM(addr, i);
+        }
+      LDM_CLK
+    } break;
+    case 0x03: {
+      BT_PA
+      addr -= bit << 2;
+      cpu.R[Rn] = addr;
+      for (int i = 0; i < 16; i++) {
+        if (BIT(opcode, i)) {
+          addr += 4;
+          LDM(addr, i);
+        }
+      }
+      LDM_CLK
+    } break;
+    case 0x05: {
+      uint32_t oldmode = cpu.CPSR.M;
+      if (BIT(opcode, 15))
+        cpu.CPSR = cpu.SPSR;
+      else
+        cpu_set_mode(MODE_USER);
+      BT_PA
+      addr -= bit << 2;
+      for (int i = 0; i < 16; i++)
+        if (BIT(opcode, i)) {
+          addr += 4;
+          LDM(addr, i);
+        }
+      LDM_CLK
+      if (!(BIT(opcode, 15)))
+        cpu_set_mode(oldmode);
+    } break;
+    case 0x07: {
+      uint32_t oldmode = cpu.CPSR.M;
+      if (BIT(opcode, 15))
+        cpu.CPSR = cpu.SPSR;
+      else
+        cpu_set_mode(MODE_USER);
+      BT_PA
+      addr -= bit << 2;
+      cpu.R[Rn] = addr;
+      for (int i = 0; i < 16; i++)
+        if (BIT(opcode, i)) {
+          addr += 4;
+          LDM(addr, i);
+        }
+      LDM_CLK
+      if (!(BIT(opcode, 15)))
+        cpu_set_mode(oldmode);
+    } break;
+    case 0x09: {
+      BT_PA
+      if (Rn == 15)
+        addr += 8;
+      for (int i = 0; i < 16; i++)
+        if (BIT(opcode, i)) {
+          LDM(addr, i);
+          addr += 4;
+        }
+      LDM_CLK
+    } break;
+    case 0x0B: {
+      BT_PA
+      if (Rn == 15)
+        addr += 8;
+      else
+        addr += bit << 2;
+      for (int i = 0; i < 16; i++) {
+        if (BIT(opcode, i)) {
+          LDM(addr, i);
+          addr += 4;
+        }
+      }
+      LDM_CLK
+    } break;
+    case 0x0D: {
+      uint32_t oldmode = cpu.CPSR.M;
+      if (BIT(opcode, 15))
+        cpu.CPSR = cpu.SPSR;
+      else
+        cpu_set_mode(MODE_USER);
+      BT_PA
+      for (int i = 0; i < 16; i++)
+        if (BIT(opcode, i)) {
+          LDM(addr, i);
+          addr += 4;
+        }
+      LDM_CLK
+      if (!(BIT(opcode, 15)))
+        cpu_set_mode(oldmode);
+    } break;
+    case 0x0F: {
+      uint32_t oldmode = cpu.CPSR.M;
+      if (BIT(opcode, 15))
+        cpu.CPSR = cpu.SPSR;
+      else
+        cpu_set_mode(MODE_USER);
+      BT_PA
+      cpu.R[Rn] += bit << 2;
+      for (int i = 0; i < 16; i++)
+        if (BIT(opcode, i)) {
+          LDM(addr, i);
+          addr += 4;
+        }
+      LDM_CLK
+      if (!(BIT(opcode, 15)))
+        cpu_set_mode(oldmode);
+    } break;
+    case 0x11: {
+      BT_PA
+      addr -= bit << 2;
+      for (int i = 0; i < 16; i++)
+        if (BIT(opcode, i)) {
+          LDM(addr, i);
+          addr += 4;
+        }
+      LDM_CLK
+    } break;
+    case 0x13: {
+      BT_PA
+      addr -= bit << 2;
+      cpu.R[Rn] = addr;
+      for (int i = 0; i < 16; i++) {
+        if (BIT(opcode, i)) {
+          LDM(addr, i);
+          addr += 4;
+        }
+      }
+      LDM_CLK
+    } break;
+    case 0x15: {
+      uint32_t oldmode = cpu.CPSR.M;
+      if (BIT(opcode, 15))
+        cpu.CPSR = cpu.SPSR;
+      else
+        cpu_set_mode(MODE_USER);
+      BT_PA
+      addr -= bit << 2;
+      for (int i = 0; i < 16; i++)
+        if (BIT(opcode, i)) {
+          LDM(addr, i);
+          addr += 4;
+        }
+      LDM_CLK
+      if (!(BIT(opcode, 15)))
+        cpu_set_mode(oldmode);
+    } break;
+    case 0x17: {
+      uint32_t oldmode = cpu.CPSR.M;
+      if (BIT(opcode, 15))
+        cpu.CPSR = cpu.SPSR;
+      else
+        cpu_set_mode(MODE_USER);
+      BT_PA
+      addr -= bit << 2;
+      cpu.R[Rn] = addr;
+      for (int i = 0; i < 16; i++)
+        if (BIT(opcode, i)) {
+          LDM(addr, i);
+          addr += 4;
+        }
+      LDM_CLK
+      if (!(BIT(opcode, 15)))
+        cpu_set_mode(oldmode);
+    } break;
+    case 0x19: {
+      BT_PA
+      if (Rn == 15)
+        addr += 8;
+      for (int i = 0; i < 16; i++)
+        if (BIT(opcode, i)) {
+          addr += 4;
+          LDM(addr, i);
+        }
+      LDM_CLK
+    } break;
+    case 0x1B: {
+      BT_PA
+      if (Rn == 15)
+        addr += 8;
+      else
+        addr += bit << 2;
+      for (int i = 0; i < 16; i++) {
+        if (BIT(opcode, i)) {
+          addr += 4;
+          LDM(addr, i);
+        }
+      }
+      LDM_CLK
+    } break;
+    case 0x1D: {
+      uint32_t oldmode = cpu.CPSR.M;
+      if (BIT(opcode, 15))
+        cpu.CPSR = cpu.SPSR;
+      else
+        cpu_set_mode(MODE_USER);
+      BT_PA
+      for (int i = 0; i < 16; i++)
+        if (BIT(opcode, i)) {
+          addr += 4;
+          LDM(addr, i);
+        }
+      LDM_CLK
+      if (!(BIT(opcode, 15)))
+        cpu_set_mode(oldmode);
+    } break;
+    case 0x1F: {
+      uint32_t oldmode = cpu.CPSR.M;
+      if (BIT(opcode, 15))
+        cpu.CPSR = cpu.SPSR;
+      else
+        cpu_set_mode(MODE_USER);
+      BT_PA
+      cpu.R[Rn] += bit << 2;
+      for (int i = 0; i < 16; i++)
+        if (BIT(opcode, i)) {
+          addr += 4;
+          LDM(addr, i);
+        }
+      LDM_CLK
+      if (!(BIT(opcode, 15)))
+        cpu_set_mode(oldmode);
+    } break;
+    default:
+      // Fuck CLion.
+      break;
+  }
 }
 
 DECL(single_swap) {
