@@ -27,6 +27,7 @@
 
 #define F_T (cpu.CPSR.T)  // 0 as ARM, 1 as THUMB
 
+#define COND(TYPE) (COND_##TYPE != 0)
 #define COND_EQ (F_Z)
 #define COND_NE (!F_Z)
 #define COND_CS (F_C)
@@ -35,12 +36,12 @@
 #define COND_PL (!F_N)
 #define COND_VS (F_V)
 #define COND_VC (!F_V)
-#define COND_HI (F_C && !F_Z)
-#define COND_LS (!F_C || F_Z)
-#define COND_GE (!F_N == !F_V)
-#define COND_LT (!F_N != !F_V)
-#define COND_GT (!F_Z && !F_N == !F_V)
-#define COND_LE (F_Z || !F_N != !F_V)
+#define COND_HI ((F_C) && (!F_Z))
+#define COND_LS ((!F_C) || (F_Z))
+#define COND_GE ((!F_N) == (!F_V))
+#define COND_LT ((!F_N) != (!F_V))
+#define COND_GT ((!F_Z) && (!F_N) == (!F_V))
+#define COND_LE ((F_Z) || (!F_N) != (!F_V))
 #define COND_AL 1
 
 #define SIGN(N) ((N) >> 31)

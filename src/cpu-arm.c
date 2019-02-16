@@ -1414,6 +1414,43 @@ static arm_block arm_code[] = {
     arm_ill,
 };
 
+bool cond(opcode) {
+  switch ((opcode >> 28) & 0xF) {
+    case 0:
+      return COND(EQ);
+    case 1:
+      return COND(NE);
+    case 2:
+      return COND(CS);
+    case 3:
+      return COND(CC);
+    case 4:
+      return COND(MI);
+    case 5:
+      return COND(PL);
+    case 6:
+      return COND(VS);
+    case 7:
+      return COND(VC);
+    case 8:
+      return COND(HI);
+    case 9:
+      return COND(LS);
+    case 0xA:
+      return COND(GE);
+    case 0xB:
+      return COND(LT);
+    case 0xC:
+      return COND(GT);
+    case 0xD:
+      return COND(LE);
+    case 0xE:
+      return COND(AL);
+    default:
+      return false;
+  }
+}
+
 int8_t cpu_decode_arm(int32_t opcode) {
   if ((opcode & 0x0FFFFF00) == 0x012FFF00) {
     return 0;  // branch and exchange
@@ -1464,9 +1501,11 @@ void cpu_run_arm(int64_t clock) {
   while (clocks > 0) {
     isSeq = (cpu.PC_old + 4 == cpu.R[R_PC]);
     cpu.PC_old = cpu.R[R_PC];
-
     register uint32_t opcode = memory_read_32(cpu.R[R_PC]);
-    arm_code[cpu_decode_arm(opcode)](opcode);
+    if (cond(opcode))
+      arm_code[cpu_decode_arm(opcode)](opcode);
+    else
+      clocks -= get_access_cycles(isSeq, 1, cpu.R[R_PC]);
     cpu.R[R_PC] += 4;
   }
 }
