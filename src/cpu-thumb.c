@@ -58,7 +58,43 @@ DECL(move_shifted_register) {
 }
 
 DECL(add_sub) {
-  // TODO:
+  uint16_t Rd = (uint16_t)(opcode & 0x7);
+  uint16_t Rs = (uint16_t)((opcode >> 3) & 0x7);
+  uint16_t Rn = (uint16_t)((opcode >> 6) & 0x7);
+
+  uint64_t reg = (uint64_t)(uint32_t)(~cpu.R[Rn]) + 1;
+  uint64_t imm = (uint64_t)(uint32_t)(~Rn) + 1;
+  uint64_t temp = 0;
+  switch ((opcode >> 9) & 0x3) {
+    case 0:
+      temp = (uint64_t)cpu.R[Rs] + (uint64_t)cpu.R[Rn];
+      cpu.R[Rd] = (uint32_t)temp;
+      SET_F(cpu.R[Rd] >> 31, cpu.R[Rd] == 0, (temp >> 32) != 0,
+            V_ADD(cpu.R[Rn], cpu.R[Rn], cpu.R[Rd]))
+      break;
+    case 1:
+      temp = (uint64_t)cpu.R[Rs] + reg;
+      cpu.R[Rd] = (uint32_t)temp;
+      SET_F(cpu.R[Rd] >> 31, cpu.R[Rd] == 0, (temp >> 32) != 0,
+            V_ADD(cpu.R[Rn], (uint32_t)(reg - 1), cpu.R[Rd]))
+      break;
+    case 2:
+      temp = (uint64_t)cpu.R[Rs] + (uint64_t)Rn;
+      cpu.R[Rd] = (uint32_t)temp;
+      SET_F(cpu.R[Rd] >> 31, cpu.R[Rd] == 0, (temp >> 32) != 0,
+            V_ADD(cpu.R[Rn], Rn, cpu.R[Rd]))
+      break;
+    case 3:
+      temp = (uint64_t)cpu.R[Rs] + imm;
+      cpu.R[Rd] = (uint32_t)temp;
+      SET_F(cpu.R[Rd] >> 31, cpu.R[Rd] == 0, (temp >> 32) != 0,
+            V_ADD(cpu.R[Rn], (uint32_t)(imm - 1), cpu.R[Rd]))
+      break;
+    default:
+      // Fuck CLion.
+      break;
+  }
+  clocks -= get_access_cycles(isSeq, 0, cpu.R[R_PC]);
 }
 
 DECL(move_compare_imm) {
