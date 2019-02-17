@@ -471,8 +471,29 @@ DECL(load_store_half) {
   }
 }
 
+static inline void thumb_str(uint16_t opcode) {
+  uint16_t Rd = (opcode >> 8) & 7;
+  uint32_t offset = (opcode & 0xFF) << 2;
+  uint32_t addr = cpu.R[R_SP] + offset;
+  memory_write_32(addr, cpu.R[Rd]);
+  clocks -= get_access_cycles_nonseq16(cpu.R[R_PC]) +
+            get_access_cycles_nonseq32(addr);
+}
+
+static inline void thumb_ldr(uint16_t opcode) {
+  uint16_t Rd = (opcode >> 8) & 7;
+  uint32_t offset = (opcode & 0xFF) << 2;
+  uint32_t addr = cpu.R[R_SP] + offset;
+  cpu.R[Rd] = memory_read_32(addr);
+  clocks -= get_access_cycles(isSeq, 0, cpu.R[R_PC]) +
+            get_access_cycles_nonseq32(addr) + 1;
+}
+
 DECL(load_store_sp_rel) {
-  // TODO:
+  if (BIT(opcode, 11))
+    thumb_ldr(opcode);
+  else
+    thumb_str(opcode);
 }
 
 DECL(get_rel_addr) {
