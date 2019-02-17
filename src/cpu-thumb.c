@@ -577,8 +577,51 @@ DECL(push_pop) {
   }
 }
 
+static inline void thumb_stmia(uint16_t opcode) {
+  uint16_t Rb = (opcode >> 8) & 7;
+  uint32_t addr = cpu.R[Rb];
+  clocks -= get_access_cycles_nonseq16(cpu.R[R_PC]);
+  int count = 0;
+  for (int i = 0; i < 8; i++)
+    if (BIT(opcode, i)) {
+      STM(addr, i);
+      addr += 4;
+      count++;
+    }
+  if (count)
+    clocks -= (get_access_cycles_seq32(addr) * (count - 1)) +
+              get_access_cycles_nonseq32(addr);
+  else
+    cpu.R[Rb] += 0x40;
+  cpu.R[Rb] = addr;
+}
+
+static inline void thumb_ldmia(uint16_t opcode) {
+  if (!(opcode & 0xFF)) {
+    clocks -= 100;
+    return;
+  }
+  uint16_t Rb = (opcode >> 8) & 7;
+  uint32_t addr = cpu.R[Rb];
+  clocks -= get_access_cycles(isSeq, 0, cpu.R[R_PC]);
+  int count = 0;
+  for (int i = 0; i < 8; i++)
+    if (BIT(opcode, i)) {
+      LDM(addr, i);
+      addr += 4;
+      count++;
+    }
+  if (count)
+    clocks -= (get_access_cycles_seq32(addr) * (count - 1)) +
+              get_access_cycles_nonseq32(addr) + 1;
+  cpu.R[Rb] = addr;
+}
+
 DECL(multiple_load_store) {
-  // TODO:
+  if (BIT(opcode, 11))
+    thumb_ldmia(opcode);
+  else
+    thumb_stmia(opcode);
 }
 
 static inline bool thumb_cond(uint16_t opcode) {
