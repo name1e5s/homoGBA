@@ -397,7 +397,7 @@ DECL(load_store_se_half) {
   uint16_t Rd = opcode & 7;
   uint16_t Rb = (opcode >> 3) & 7;
   uint16_t Ro = (opcode >> 6) & 7;
-  uint32_t addr = cpu.R[Rd] + cpu.R[Ro];
+  uint32_t addr = cpu.R[Rb] + cpu.R[Ro];
   switch ((opcode >> 10) & 3) {
     case 0: {
       STR_(16)
@@ -430,7 +430,7 @@ DECL(load_store_imm) {
   uint16_t Rd = opcode & 7;
   uint16_t Rb = (opcode >> 3) & 7;
   uint16_t Ro = ((opcode >> 4) & 0x1F) << 2;
-  uint32_t addr = cpu.R[Rd] + Ro;
+  uint32_t addr = cpu.R[Rb] + Ro;
   switch ((opcode >> 11) & 3) {
     case 0: {
       addr += 3 * Ro;
