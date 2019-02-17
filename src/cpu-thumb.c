@@ -427,7 +427,29 @@ DECL(load_store_se_half) {
 }
 
 DECL(load_store_imm) {
-  // TODO:
+  uint16_t Rd = opcode & 7;
+  uint16_t Rb = (opcode >> 3) & 7;
+  uint16_t Ro = ((opcode >> 4) & 0x1F) << 2;
+  uint32_t addr = cpu.R[Rd] + Ro;
+  switch ((opcode >> 11) & 3) {
+    case 0: {
+      addr += 3 * Ro;
+      STR_(32)
+    } break;
+    case 2: {
+      STR_(8)
+    } break;
+    case 1: {
+      addr += 3 * Ro;
+      LDR_(32)
+    } break;
+    case 3: {
+      LDR_(8);
+    } break;
+    default:
+      // fuck CLion.
+      break;
+  }
 }
 
 DECL(load_store_half) {
