@@ -53,6 +53,8 @@ uint32_t get_access_cycles(bool seq, bool quad, uint32_t address);
   get_access_cycles(true, quad, address)
 #define get_access_cycles_seq32(address) get_access_cycles(true, true, address)
 #define get_access_cycles_seq16(address) get_access_cycles(true, false, address)
+// For the macros
+#define get_access_cycles_nonseq8(address) get_access_cycles_nonseq16(address)
 
 #define DECL_MEM(bit)                                \
   uint##bit##_t memory_read_##bit(uint32_t address); \

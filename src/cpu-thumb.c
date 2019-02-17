@@ -359,8 +359,38 @@ DECL(load_pc_rel) {
             get_access_cycles_seq32(addr) + 1;
 }
 
+#define STR_(B)                                       \
+  memory_write_##B(addr, (uint##B##_t)cpu.R[Rd]);     \
+  clocks -= get_access_cycles_nonseq16(cpu.R[R_PC]) + \
+            get_access_cycles_nonseq##B(addr);
+
+#define LDR_(B)                                             \
+  cpu.R[Rd] = (uint32_t)(uint##B##_t)memory_read_##B(addr); \
+  get_access_cycles(isSeq, 0, cpu.R[R_PC]) +                \
+      get_access_cycles_nonseq##B(addr) + 1;
+
 DECL(load_store_reg) {
-  // TODO:
+  uint16_t Rd = opcode & 7;
+  uint16_t Rb = (opcode >> 3) & 7;
+  uint16_t Ro = (opcode >> 6) & 7;
+  uint32_t addr = cpu.R[Rd] + cpu.R[Ro];
+  switch ((opcode >> 10) & 3) {
+    case 0: {
+      STR_(32)
+    } break;
+    case 1: {
+      STR_(8)
+    } break;
+    case 2: {
+      LDR_(32)
+    } break;
+    case 3: {
+      LDR_(8);
+    } break;
+    default:
+      // fuck CLion.
+      break;
+  }
 }
 
 DECL(load_store_se_half) {
