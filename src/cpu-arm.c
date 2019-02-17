@@ -38,6 +38,7 @@ DECL(branch_and_exchange) {
     clocks -= get_access_cycles(isSeq, 1, cpu.PC_old) * 2 +
               get_access_cycles_nonseq32(cpu.R[R_PC]);
     cpu_run_thumb(clocks);
+    return;
   }
 
   cpu.R[R_PC] = (cpu.R[Rn] + (Rn == R_PC ? 8 : 0)) & (~3) - 4;
@@ -133,7 +134,8 @@ DECL(branch_with_link) {
       if (cpu.CPSR.T == 1) {                             \
         cpu.exec_mode = EXEC_THUMB;                      \
         cpu.R[R_PC] += 4;                                \
-        return cpu_run_thumb(clocks);                    \
+        cpu_run_thumb(clocks);                           \
+        return;                                          \
       }                                                  \
     }                                                    \
   } while (0)

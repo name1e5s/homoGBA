@@ -299,14 +299,61 @@ DECL(alu) {
 }
 
 DECL(hi_reg_bx) {
-  // TODO:
+  uint16_t Rd = (opcode & 7) | ((opcode >> 4) & 8);
+  uint16_t Rs = (opcode >> 3) & 0xF;
+  clocks -= get_access_cycles(isSeq, 0, cpu.R[R_PC]);
+  switch ((opcode >> 8) & 0x3) {
+    case 0: {
+      cpu.R[Rd] = cpu.R[Rd] + cpu.R[Rs] + (Rs == R_PC ? 4 : 0);
+      if (Rd == R_PC) {
+        clocks -= get_access_cycles_nonseq(1, cpu.R[R_PC]) +
+                  get_access_cycles_seq(1, cpu.R[R_PC]);
+        cpu.R[R_PC] = (cpu.R[R_PC] - 2) & ~1;
+      }
+    } break;
+    case 1: {
+      uint32_t Rd_val = cpu.R[Rd] + (Rd == R_PC ? 4 : 0);
+      uint64_t t1 = (uint64_t) ~(cpu.R[Rs] + (Rs == R_PC ? 4 : 0));
+
+      uint64_t temp = (uint64_t)Rd_val + t1 + 1ULL;
+      SET_F(BIT((uint32_t)temp, 31), temp == 0, (temp >> 32) != 0,
+            V_ADD(t1, (uint32_t)t1 - 1, (uint32_t)temp));
+    } break;
+    case 2: {
+      cpu.R[Rd] = cpu.R[Rs] + (Rs == R_PC ? 4 : 0);
+      if (Rd == R_PC) {
+        clocks -= get_access_cycles_nonseq(1, cpu.R[R_PC]) +
+                  get_access_cycles_seq(1, cpu.R[R_PC]);
+        cpu.R[R_PC] = (cpu.R[R_PC] - 2) & ~1;
+      }
+    } break;
+    case 3: {
+      if (BIT(opcode, 7), opcode & 7)
+        clocks -= 100;
+      else {
+        uint32_t offset = (Rs == R_PC ? (cpu.R[R_PC] + 4) & (~2) : cpu.R[Rs]);
+        if ((offset & 1) == 0) {
+          cpu.exec_mode = EXEC_ARM;
+          cpu.CPSR.T = 0;
+          cpu.R[R_PC] = offset & (~3);
+          clocks -= get_access_cycles_nonseq(1, cpu.R[R_PC]) +
+                    get_access_cycles_seq(1, cpu.R[R_PC]);
+          cpu_run_arm(clocks);
+          return;
+        }
+        cpu.R[R_PC] = offset & (~1) - 2;
+        clocks -= get_access_cycles_nonseq(1, cpu.R[R_PC]) +
+                  get_access_cycles_seq(1, cpu.R[R_PC]);
+      }
+    } break;
+  }
 }
 
 DECL(load_pc_rel) {
   uint32_t offset = (uint32_t)((opcode & 0xFF) << 2);
   uint32_t Rd = (uint32_t)((opcode >> 8) & 3);
 
-  uint32_t addr = (cpu.R[R_PC] + 4) & (-2) + offset;
+  uint32_t addr = (cpu.R[R_PC] + 4) & (~2) + offset;
   cpu.R[Rd] = memory_read_32(addr);
   clocks -= get_access_cycles(isSeq, 0, cpu.R[R_PC]) +
             get_access_cycles_seq32(addr) + 1;
