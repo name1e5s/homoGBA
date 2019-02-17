@@ -18,8 +18,125 @@
 #include <gba.h>
 #include <memory.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>"
 
 memory_t memory;
+
+#define SET(TARGET) memset(TARGET, 0, sizeof(TARGET));
+void memory_init(uint8_t* bios_ptr, uint8_t* gamepak_ptr) {
+  memory.bios = bios_ptr;
+  memory.rom_wait0 = gamepak_ptr;
+  memory.rom_wait1 = gamepak_ptr;
+  memory.rom_wait2 = gamepak_ptr;
+
+  SET(memory.warm_in_chip);
+  SET(memory.warm_on_board);
+  SET(memory.palette)
+  SET(memory.video)
+  SET(memory.obj_attr)
+  SET(memory.io_reg)
+
+  // Set registers
+  register_write_16(DISPCNT, 0x0080);
+  register_write_16(GREENSWAP, 0);
+  register_write_16(DISPSTAT, 0);
+  register_write_16(VCOUNT, 0);
+  register_write_16(BG0CNT, 0);
+  register_write_16(BG1CNT, 0);
+  register_write_16(BG2CNT, 0);
+  register_write_16(BG3CNT, 0);
+  register_write_16(BG0HOFS, 0);
+  register_write_16(BG0VOFS, 0);
+  register_write_16(BG1HOFS, 0);
+  register_write_16(BG1VOFS, 0);
+  register_write_16(BG2HOFS, 0);
+  register_write_16(BG2VOFS, 0);
+  register_write_16(BG3HOFS, 0);
+  register_write_16(BG3VOFS, 0);
+  register_write_16(BG2PA, 1 << 8);
+  register_write_16(BG2PB, 0);
+  register_write_16(BG2PC, 0);
+  register_write_16(BG2PD, 1 << 8);
+  register_write_16(BG2X_L, 0);
+  register_write_16(BG2X_H, 0);
+  register_write_16(BG2Y_L, 0);
+  register_write_16(BG2Y_H, 0);
+  register_write_16(BG3PA, 1 << 8);
+  register_write_16(BG3PB, 0);
+  register_write_16(BG3PC, 0);
+  register_write_16(BG3PD, 1 << 8);
+  register_write_16(BG3X_L, 0);
+  register_write_16(BG3X_H, 0);
+  register_write_16(BG3Y_L, 0);
+  register_write_16(BG3Y_H, 0);
+  register_write_16(WIN0H, 0);
+  register_write_16(WIN1H, 0);
+  register_write_16(WIN0V, 0);
+  register_write_16(WIN1V, 0);
+  register_write_16(WININ, 0);
+  register_write_16(WINOUT, 0);
+  register_write_16(MOSAIC, 0);
+  register_write_16(BLDCNT, 0);
+  register_write_16(BLDALPHA, 0);
+  register_write_16(BLDY, 0);
+
+  register_write_16(SND1CNT_L, 0);
+  register_write_16(SND1CNT_H, 0);
+  register_write_16(SND1CNT_X, 0);
+  register_write_16(SND2CNT_L, 0);
+  register_write_16(SND2CNT_H, 0);
+  register_write_16(SND3CNT_L, 0);
+  register_write_16(SND3CNT_H, 0);
+  register_write_16(SND3CNT_X, 0);
+  register_write_16(SND4CNT_L, 0);
+  register_write_16(SND4CNT_H, 0);
+  register_write_16(SNDCNT_L, 0);
+  register_write_16(SNDCNT_H, 0x880E);
+  register_write_16(SNDCNT_X, 0);
+  register_write_16(SNDBIAS, 0);
+  register_write_32(FIFO_A, 0);
+  register_write_32(FIFO_B, 0);
+
+  register_write_32(DMA0SAD, 0);
+  register_write_32(DMA0DAD, 0);
+  register_write_16(DMA0CNT_L, 0);
+  register_write_16(DMA0CNT_H, 0);
+  register_write_32(DMA1SAD, 0);
+  register_write_32(DMA1DAD, 0);
+  register_write_16(DMA1CNT_L, 0);
+  register_write_16(DMA1CNT_H, 0);
+  register_write_32(DMA2SAD, 0);
+  register_write_32(DMA2DAD, 0);
+  register_write_16(DMA2CNT_L, 0);
+  register_write_16(DMA2CNT_H, 0);
+  register_write_32(DMA3SAD, 0);
+  register_write_32(DMA3DAD, 0);
+  register_write_16(DMA3CNT_L, 0);
+  register_write_16(DMA3CNT_H, 0);
+
+  register_write_16(TM0CNT_L, 0xFF6F);
+  register_write_16(TM0CNT_H, 0);
+  register_write_16(TM1CNT_L, 0);
+  register_write_16(TM1CNT_H, 0);
+  register_write_16(TM2CNT_L, 0);
+  register_write_16(TM2CNT_H, 0);
+  register_write_16(TM3CNT_L, 0);
+  register_write_16(TM3CNT_H, 0);
+
+  register_write_16(KEYINPUT, 0);
+  register_write_16(KEYCNT, 0);
+
+  register_write_16(REG_IE, 0);
+  register_write_16(REG_IF, 0);
+  register_write_16(WAITCNT, 0);
+  register_write_16(REG_IME, 0);
+}
+
+void memory_destory(void) {
+  free(memory.bios);
+  free(memory.rom_wait0);
+}
 
 // Default value. Write to REG_WAITCNT will change them.
 uint32_t wait_cycle_seq[16] = {0, 0, 2, 0, 0, 0, 0, 0, 2, 2, 4, 4, 8, 8, 4, 4};

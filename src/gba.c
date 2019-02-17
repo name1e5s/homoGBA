@@ -22,13 +22,11 @@
 
 int gba_init(const char* path) {
   uint8_t* gamepak = cartridge_load(path);
-  memory.rom_wait0 = gamepak;
-  memory.rom_wait1 = gamepak;
-  memory.rom_wait2 = gamepak;
+  memory_init(gamepak, gamepak);  // Fake parameters.
 
   cpu_init();
 }
 
 void gba_delete() {
-  free(memory.rom_wait0);
+  memory_destory();
 }
