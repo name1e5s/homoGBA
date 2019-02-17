@@ -178,13 +178,13 @@ ALU_NZ(and, cpu.R[Rd], cpu.R[Rd] &= cpu.R[Rs];)
 ALU_NZ(eor, cpu.R[Rd], cpu.R[Rd] ^= cpu.R[Rs];)
 ALU_NZ(lsl,
        cpu.R[Rd],
-       cpu.R[Rd] = lsl_by_reg(cpu.R[Rd], (uint8_t)(cpu.R[Rs] & 0xFF));)
+       cpu.R[Rd] = lsl_by_reg_carry(cpu.R[Rd], (uint8_t)(cpu.R[Rs] & 0xFF));)
 ALU_NZ(lsr,
        cpu.R[Rd],
-       cpu.R[Rd] = lsr_by_reg(cpu.R[Rd], (uint8_t)(cpu.R[Rs] & 0xFF));)
+       cpu.R[Rd] = lsr_by_reg_carry(cpu.R[Rd], (uint8_t)(cpu.R[Rs] & 0xFF));)
 ALU_NZ(asr,
        cpu.R[Rd],
-       cpu.R[Rd] = asr_by_reg(cpu.R[Rd], (uint8_t)(cpu.R[Rs] & 0xFF));)
+       cpu.R[Rd] = asr_by_reg_carry(cpu.R[Rd], (uint8_t)(cpu.R[Rs] & 0xFF));)
 ALU(adc,
     uint64_t temp = (uint64_t)cpu.R[Rd] + (uint64_t)cpu.R[Rs] + F_C ? 1ULL : 0;
     SET_F(BIT((uint32_t)temp, 31),
@@ -453,7 +453,22 @@ DECL(load_store_imm) {
 }
 
 DECL(load_store_half) {
-  // TODO:
+  uint16_t Rd = opcode & 7;
+  uint16_t Rb = (opcode >> 3) & 7;
+  uint16_t offset = (opcode >> 5) & (0x1F << 1);
+  uint32_t addr = cpu.R[Rb] + offset;
+
+  if (BIT(opcode, 11)) {
+    cpu.R[Rd] = (uint32_t)memory_read_16(addr);
+    if (addr & 1)
+      cpu.R[Rd] = ror_by_imm(cpu.R[Rd], 8);
+    clocks -= get_access_cycles(isSeq, 0, cpu.R[R_PC]) +
+              get_access_cycles_nonseq16(addr) + 1;
+  } else {
+    memory_write_16(addr, (uint16_t)cpu.R[Rd]);
+    clocks -= get_access_cycles_nonseq16(cpu.R[R_PC]) +
+              get_access_cycles_nonseq16(addr);
+  }
 }
 
 DECL(load_store_sp_rel) {
