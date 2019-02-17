@@ -160,8 +160,142 @@ DECL(move_compare_imm) {
   }
 }
 
+#define ALU_NZ(INSN, TARGET, BODY)                   \
+  static inline void thumb_##INSN(uint16_t opcode) { \
+    uint16_t Rs = (opcode >> 3) & 7;                 \
+    uint16_t Rd = (opcode)&7;                        \
+    BODY SET_NZ(BIT((TARGET), 31), (TARGET) == 0);   \
+  }
+
+#define ALU(INSN, BODY)                              \
+  static inline void thumb_##INSN(uint16_t opcode) { \
+    uint16_t Rs = (opcode >> 3) & 7;                 \
+    uint16_t Rd = (opcode)&7;                        \
+    BODY                                             \
+  }
+
+ALU_NZ(and, cpu.R[Rd], cpu.R[Rd] &= cpu.R[Rs];)
+ALU_NZ(eor, cpu.R[Rd], cpu.R[Rd] ^= cpu.R[Rs];)
+ALU_NZ(lsl,
+       cpu.R[Rd],
+       cpu.R[Rd] = lsl_by_reg(cpu.R[Rd], (uint8_t)(cpu.R[Rs] & 0xFF));)
+ALU_NZ(lsr,
+       cpu.R[Rd],
+       cpu.R[Rd] = lsr_by_reg(cpu.R[Rd], (uint8_t)(cpu.R[Rs] & 0xFF));)
+ALU_NZ(asr,
+       cpu.R[Rd],
+       cpu.R[Rd] = asr_by_reg(cpu.R[Rd], (uint8_t)(cpu.R[Rs] & 0xFF));)
+ALU(adc,
+    uint64_t temp = (uint64_t)cpu.R[Rd] + (uint64_t)cpu.R[Rs] + F_C ? 1ULL : 0;
+    SET_F(BIT((uint32_t)temp, 31),
+          temp == 0,
+          (temp >> 32) != 0,
+          V_ADD(cpu.R[Rd], cpu.R[Rs], (uint32_t)temp) != 0);
+
+    cpu.R[Rd] = (uint32_t)temp;)
+ALU(sbc,
+    uint64_t temp = (uint64_t)cpu.R[Rd] + (uint64_t)~cpu.R[Rs] + F_C ? 1ULL : 0;
+    SET_F(BIT((uint32_t)temp, 31),
+          temp == 0,
+          (temp >> 32) != 0,
+          V_ADD(cpu.R[Rd], ~cpu.R[Rs], (uint32_t)temp));
+
+    cpu.R[Rd] = (uint32_t)temp;)
+ALU_NZ(ror,
+       cpu.R[Rd],
+       cpu.R[Rd] = ror_by_reg(cpu.R[Rd], (uint8_t)(cpu.R[Rs] & 0xFF));)
+ALU_NZ(tst, temp, uint32_t temp = cpu.R[Rd] & cpu.R[Rs];)
+ALU_NZ(neg, cpu.R[Rd], cpu.R[Rd] = (uint32_t)(-(int32_t)cpu.R[Rs]);
+       F_C = (cpu.R[Rs] == 0);
+       F_V = V_ADD(0, ~cpu.R[Rs], cpu.R[Rd]);)
+ALU(cmp, uint64_t temp = (uint64_t)cpu.R[Rd] + (uint64_t)~cpu.R[Rs] + 1ULL;
+    SET_F(BIT((uint32_t)temp, 31),
+          temp == 0,
+          (temp >> 32) != 0,
+          V_ADD(cpu.R[Rd], ~cpu.R[Rs], (uint32_t)temp));)
+ALU_NZ(cmn,
+       (uint32_t)temp,
+       uint64_t temp = (uint64_t)cpu.R[Rd] + (uint64_t)cpu.R[Rs];
+       F_C = (temp & 0xFFFFFFFF00000000) != 0;
+       F_V = (V_ADD(cpu.R[Rd], cpu.R[Rs], (uint32_t)temp) != 0);)
+ALU_NZ(orr, cpu.R[Rd], cpu.R[Rd] |= cpu.R[Rs];)
+ALU_NZ(mul, cpu.R[Rd], cpu.R[Rd] *= cpu.R[Rs];)
+ALU_NZ(bic, cpu.R[Rd], cpu.R[Rd] &= ~cpu.R[Rs];)
+ALU_NZ(mvn, cpu.R[Rd], cpu.R[Rd] = ~cpu.R[Rs];)
+
+static inline int64_t thumb_mul_cycles(uint16_t opcode) {
+  uint32_t data = cpu.R[opcode & 7];
+  if (BIT(data, 31))
+    data = ~data;
+  if (data & 0xFF000000)
+    return 4;
+  if (data & 0x00FF0000)
+    return 3;
+  if (data & 0x0000FF00)
+    return 2;
+  return 1;
+}
+
 DECL(alu) {
-  // TODO:
+  switch ((opcode >> 6) & 0xF) {
+    case 0:
+      thumb_and(opcode);
+      break;
+    case 1:
+      thumb_eor(opcode);
+      break;
+    case 2:
+      thumb_lsl(opcode);
+      clocks -= 1;
+      break;
+    case 3:
+      thumb_lsr(opcode);
+      clocks -= 1;
+      break;
+    case 4:
+      thumb_asr(opcode);
+      clocks -= 1;
+      break;
+    case 5:
+      thumb_adc(opcode);
+      break;
+    case 6:
+      thumb_sbc(opcode);
+      break;
+    case 7:
+      thumb_ror(opcode);
+      clocks -= 1;
+      break;
+    case 8:
+      thumb_tst(opcode);
+      break;
+    case 9:
+      thumb_neg(opcode);
+      break;
+    case 0xA:
+      thumb_cmp(opcode);
+      break;
+    case 0xB:
+      thumb_cmn(opcode);
+      break;
+    case 0xC:
+      thumb_orr(opcode);
+      break;
+    case 0xD:
+      thumb_mul(opcode);
+      clocks -= thumb_mul_cycles(opcode);
+      break;
+    case 0xE:
+      thumb_bic(opcode);
+      break;
+    case 0xF:
+      thumb_mvn(opcode);
+      break;
+    default:
+      // fuck CLion.
+      break;
+  }
+  clocks -= get_access_cycles(isSeq, 0, cpu.R[R_PC]);
 }
 
 DECL(hi_reg_bx) {
