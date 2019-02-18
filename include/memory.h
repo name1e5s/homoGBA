@@ -64,13 +64,20 @@ uint32_t get_access_cycles(bool seq, bool quad, uint32_t address);
   void memory_write_##bit(uint32_t address, uint##bit##_t value);
 
 DECL_MEM(32)
-DECL_MEM(16) DECL_MEM(8)
+DECL_MEM(16)
+DECL_MEM(8)
+
+    int32_t dma_update(void);
+int32_t dma_working(void);
+int32_t dma_get_clocks(void);
+
+void dma_request_data(int32_t a, int32_t b);
 
 #define DECL_REG(bit)                                  \
   uint##bit##_t register_read_##bit(uint32_t address); \
   void register_write_##bit(uint32_t address, uint##bit##_t value);
 
-    DECL_REG(32) DECL_REG(16) DECL_REG(8)
+DECL_REG(32) DECL_REG(16) DECL_REG(8)
 
 #define REG_(ADDR, TYPE) *((uint##TYPE##_t*)(&memory.io_reg[ADDR - 0x4000000]))
 
