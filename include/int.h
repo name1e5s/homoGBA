@@ -15,17 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef APU_H
-#define APU_H
-#include <stdbool.h>
-#include <stdint.h>
+#ifndef INT_H
+#define INT_H
+void int_init(void);
+void int_call(uint32_t flag);
+void int_LCD(uint32_t flag);
 
-void apu_init(void);
-bool apu_sound_is_on(void);
-int32_t apu_update(int32_t clocks);
-void apu_register_write16(uint32_t address, uint16_t value);
-void apu_reset_buffer(void);
-void apu_sound_end(void);
-void apu_callback(void* buffer, uint32_t length);
-void apu_timer_check(int num);
+int32_t int_update_screen_time(int32_t clocks);
+
+int32_t int_check(void);
+void int_keyboard(void);
 #endif

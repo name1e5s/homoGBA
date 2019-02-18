@@ -73,11 +73,11 @@ int32_t dma_get_clocks(void);
 
 void dma_request_data(int32_t a, int32_t b);
 
-#define DECL_REG(bit)                                  \
+#define DECLREG(bit)                                  \
   uint##bit##_t register_read_##bit(uint32_t address); \
   void register_write_##bit(uint32_t address, uint##bit##_t value);
 
-DECL_REG(32) DECL_REG(16) DECL_REG(8)
+DECLREG(32) DECLREG(16) DECLREG(8)
 
 #define REG_(ADDR, TYPE) *((uint##TYPE##_t*)(&memory.io_reg[ADDR - 0x4000000]))
 
