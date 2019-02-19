@@ -338,7 +338,7 @@ DECL(hi_reg_bx) {
           cpu.R[R_PC] = offset & (~3);
           clocks -= get_access_cycles_nonseq(1, cpu.R[R_PC]) +
                     get_access_cycles_seq(1, cpu.R[R_PC]);
-          cpu_run_arm(clocks);
+          cpu_run_arm();
           return;
         }
         cpu.R[R_PC] = offset & (~1) - 2;
@@ -800,12 +800,14 @@ uint16_t decode(uint16_t opcode) {
   return 0;
 }
 
-void cpu_run_thumb(int64_t clock) {
-  clocks = clock;
+void cpu_run_thumb() {
   while (clocks > 0) {
     isSeq = (cpu.PC_old + 2 == cpu.R[R_PC]);
     cpu.PC_old = cpu.R[R_PC];
     register uint16_t opcode = memory_read_16(cpu.R[R_PC]);
+    log_trace("\tthu| opcode: 0x%08x PC: 0x%08x Type: %d 0x%08x 0x%08x 0x%08x",
+              opcode, cpu.R[R_PC], decode(opcode), cpu.R[R_SP], cpu.R[R_LR],
+              cpu.R[0]);
     thumb_code[decode(opcode)](opcode);
     cpu.R[R_PC] += 2;
   }

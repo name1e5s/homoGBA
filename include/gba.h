@@ -22,6 +22,6 @@
 #include <memory.h>
 #include <stdint.h>
 
-int gba_init(const char* path);
+int gba_init(const char* path_bios, const char* path_gamepak);
 void gba_delete();
 #endif

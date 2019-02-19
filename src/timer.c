@@ -15,13 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <gba.h>
-#include <log.h>
-#include <stdio.h>
+#include <timer.h>
 
-int main(int argc, char** argv) {
-    gba_init("../test/BIOS.GBA","../test/SUPERMAR.GBA");
-    cpu_run(100/*280896*/); // A frame
-    gba_delete();
-  return 0;
-}
+void timer_init(void) {}
+void timer_set_start_0(uint16_t data) {}
+void timer_set_start_1(uint16_t data) {}
+void timer_set_start_2(uint16_t data) {}
+void timer_set_start_3(uint16_t data) {}
+
+uint16_t timer_get_start_0(void) {}
+uint16_t timer_get_start_1(void) {}
+uint16_t timer_get_start_2(void) {}
+uint16_t timer_get_start_3(void) {}
+
+void timer_setup_0(void) {}
+void timer_setup_1(void) {}
+void timer_setup_2(void) {}
+void timer_setup_3(void) {}
+
+int32_t timer_update(int32_t clock) {}

@@ -18,6 +18,7 @@
 #include <apu.h>
 #include <gba.h>
 #include <int.h>
+#include <log.h>
 #include <memory.h>
 #include <ppu.h>
 #include <stdbool.h>
@@ -210,8 +211,8 @@ const bool bus_is_16[16] = {0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1};
 
 // Access Cycles
 uint32_t get_access_cycles(bool seq, bool quad, uint32_t address) {
-  uint32_t idx = (address >> 0x18);
-  bool doubled = quad & bus_is_16[idx];
+  uint32_t idx = (address >> 0x18) & 0xF;
+  bool doubled = quad && bus_is_16[idx];
   if (seq)
     return (wait_cycle_seq[idx] + 1) << doubled;
   else if (doubled)
@@ -522,7 +523,8 @@ void register_write_16(uint32_t address, uint16_t value) {
       WIN(0H)
       WIN(0V)
       WIN(1H)
-      WIN(1V) WIN(IN) WIN(OUT)
+      WIN(1V)
+      WIN(IN) WIN(OUT)
 
           case MOSAIC : REG_MOSIAC = value;
       ppu_update_register(MOSAIC);
@@ -550,7 +552,8 @@ void register_write_16(uint32_t address, uint16_t value) {
 
       TM(0)
       TM(1)
-      TM(2) TM(3)
+      TM(2)
+      TM(3)
 
       // D.N.E.
 #define SND4CNT_X 0x4000007D

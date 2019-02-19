@@ -15,13 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <gba.h>
-#include <log.h>
-#include <stdio.h>
-
-int main(int argc, char** argv) {
-    gba_init("../test/BIOS.GBA","../test/SUPERMAR.GBA");
-    cpu_run(100/*280896*/); // A frame
-    gba_delete();
-  return 0;
-}
+#include <apu.h>
+void apu_init(void) {}
+bool apu_sound_is_on(void) {}
+int32_t apu_update(int32_t clocks) {}
+void apu_register_write16(uint32_t address, uint16_t value) {}
+void apu_reset_buffer(void) {}
+void apu_sound_end(void) {}
+void apu_callback(void* buffer, uint32_t length) {}
+void apu_timer_check(int num) {}

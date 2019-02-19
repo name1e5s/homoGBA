@@ -15,13 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <gba.h>
-#include <log.h>
-#include <stdio.h>
+#include <int.h>
+void int_init(void) {}
+void int_call(uint32_t flag) {}
+void int_LCD(uint32_t flag) {}
 
-int main(int argc, char** argv) {
-    gba_init("../test/BIOS.GBA","../test/SUPERMAR.GBA");
-    cpu_run(100/*280896*/); // A frame
-    gba_delete();
-  return 0;
-}
+int32_t int_update_screen_time(int32_t clocks) {}
+
+int32_t int_check(void) {}
+void int_keyboard(void) {}

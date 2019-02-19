@@ -67,6 +67,28 @@ uint8_t* cartridge_load(const char* path) {
   return cartridge;
 }
 
+uint8_t* bios_load(const char* path) {
+  FILE* fp = fopen(path, "r");
+  if (fp == NULL) {
+    log_error("Load file %s failed.", path);
+    return NULL;
+  }
+  fseek(fp, 0L, SEEK_END);
+
+  long size = ftell(fp);
+  if (size > 0x02000000) {
+    log_error("ROM too big!");
+    return NULL;
+  }
+  fseek(fp, 0L, SEEK_SET);
+  uint8_t* cartridge = malloc(sizeof(uint8_t) * size);
+  if (fread(cartridge, 1, size, fp) != size) {
+    log_error("Load ROM failed!");
+    return cartridge;
+  }
+  return cartridge;
+}
+
 static bool check_header(uint8_t* rom) {
   cartridge_header header = *(cartridge_header*)rom;
   log_info("Checking ROM Header...");

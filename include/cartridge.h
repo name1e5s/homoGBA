@@ -41,4 +41,5 @@ typedef struct homo_cartridge_header {
 } cartridge_header;
 
 uint8_t* cartridge_load(const char* path);
+uint8_t* bios_load(const char* path);
 #endif

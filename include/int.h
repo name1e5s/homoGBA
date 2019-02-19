@@ -17,6 +17,7 @@
  */
 #ifndef INT_H
 #define INT_H
+#include <stdint.h>
 void int_init(void);
 void int_call(uint32_t flag);
 void int_LCD(uint32_t flag);

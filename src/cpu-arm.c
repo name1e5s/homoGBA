@@ -37,7 +37,7 @@ DECL(branch_and_exchange) {
     cpu.R[R_PC] = (cpu.R[Rn] + (Rn == R_PC ? 8 : 0)) & (~1);
     clocks -= get_access_cycles(isSeq, 1, cpu.PC_old) * 2 +
               get_access_cycles_nonseq32(cpu.R[R_PC]);
-    cpu_run_thumb(clocks);
+    cpu_run_thumb();
     return;
   }
 
@@ -134,7 +134,7 @@ DECL(branch_with_link) {
       if (cpu.CPSR.T == 1) {                             \
         cpu.exec_mode = EXEC_THUMB;                      \
         cpu.R[R_PC] += 4;                                \
-        cpu_run_thumb(clocks);                           \
+        cpu_run_thumb();                                 \
         return;                                          \
       }                                                  \
     }                                                    \
@@ -403,7 +403,7 @@ DECL(data_processing) {
 }
 
 DECL(psr) {
-  switch ((opcode >> 20) & 0xFF) {
+  switch ((opcode >> 20) & 0x1F) {
       // MRS
     case 0x10:
       cpu.R[(opcode >> 12) & 0xF] = cpsr_to_uint(cpu.CPSR);
@@ -415,6 +415,8 @@ DECL(psr) {
     case 0x12: {
       uint32_t data = cpu.R[opcode & 0xF];
       uint32_t res = 0;
+      if (BIT(opcode, 25))
+        data = ror_by_imm(opcode & 0xFF, ((opcode >> 8) & 0xF) << 1);
       if (BIT(opcode, 19)) {
         res |= data & 0xFF000000;
         cpu.CPSR = uint_to_cpsr(cpsr_to_uint(cpu.CPSR) & 0x00FFFFFF);
@@ -440,6 +442,8 @@ DECL(psr) {
     }
     case 0x16: {
       uint32_t data = cpu.R[opcode & 0xF];
+      if (BIT(opcode, 25))
+        data = ror_by_imm(opcode & 0xFF, ((opcode >> 8) & 0xF) << 1);
       uint32_t res = 0;
       if (BIT(opcode, 19)) {
         res |= data & 0xFF000000;
@@ -628,7 +632,7 @@ DECL(single_transfer) {
   else
     offset = opcode & 0x00000FFF;
 
-  switch ((opcode >> 20) & 0xFF) {
+  switch ((opcode >> 20) & 0x3F) {
     case 0x00:
     case 0x02:
       memory_write_32(Rn_val, Rd_val);
@@ -909,7 +913,7 @@ static inline int popcnt(uint32_t val) {
               get_access_cycles_seq32(addr) * (bit - 1) + 1;
 
 DECL(block_transfer) {
-  switch ((opcode >> 20) & 0xFF) {
+  switch ((opcode >> 20) & 0x1F) {
     case 0x00: {
       BT_PA
       addr -= bit << 2;
@@ -1498,15 +1502,18 @@ int8_t cpu_decode_arm(int32_t opcode) {
     return 10;  // illegal instruction block
 }
 
-void cpu_run_arm(int64_t clock) {
-  clocks = clock;
+inline void cpu_run_arm() {
   while (clocks > 0) {
     isSeq = (cpu.PC_old + 4 == cpu.R[R_PC]);
     cpu.PC_old = cpu.R[R_PC];
     register uint32_t opcode = memory_read_32(cpu.R[R_PC]);
-    if (cond(opcode))
+    if (cond(opcode)) {
+      log_trace(
+          "\t\tarm| opcode: 0x%08x PC: 0x%08x Type: %d 0x%08x 0x%08x 0x%08x",
+          opcode, cpu.R[R_PC], cpu_decode_arm(opcode), cpu.R[R_SP], cpu.R[R_LR],
+          cpu.R[0]);
       arm_code[cpu_decode_arm(opcode)](opcode);
-    else
+    } else
       clocks -= get_access_cycles(isSeq, 1, cpu.R[R_PC]);
     cpu.R[R_PC] += 4;
   }

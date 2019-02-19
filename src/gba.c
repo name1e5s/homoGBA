@@ -20,9 +20,10 @@
 #include <gba.h>
 #include <stdlib.h>
 
-int gba_init(const char* path) {
-  uint8_t* gamepak = cartridge_load(path);
-  memory_init(gamepak, gamepak);  // Fake parameters.
+int gba_init(const char* path_bios, const char* path_gamepak) {
+  uint8_t* gamepak = cartridge_load(path_gamepak);
+  uint8_t* bios = bios_load(path_bios);
+  memory_init(bios, gamepak);
 
   cpu_init();
 }

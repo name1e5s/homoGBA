@@ -67,13 +67,13 @@ DECL_MEM(32)
 DECL_MEM(16)
 DECL_MEM(8)
 
-    int32_t dma_update(void);
+int32_t dma_update(void);
 int32_t dma_working(void);
 int32_t dma_get_clocks(void);
 
 void dma_request_data(int32_t a, int32_t b);
 
-#define DECLREG(bit)                                  \
+#define DECLREG(bit)                                   \
   uint##bit##_t register_read_##bit(uint32_t address); \
   void register_write_##bit(uint32_t address, uint##bit##_t value);
 

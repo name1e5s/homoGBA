@@ -104,6 +104,7 @@ extern int64_t clocks;
 
 void cpu_init(void);
 void cpu_set_mode(uint32_t mode);
-void cpu_run_arm(int64_t clock);
-void cpu_run_thumb(int64_t clock);
+void cpu_run(int64_t clock);
+extern void cpu_run_arm();
+extern void cpu_run_thumb();
 #endif

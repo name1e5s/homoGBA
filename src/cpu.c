@@ -110,3 +110,11 @@ void cpu_set_mode(uint32_t mode) {
     LOAD_REG(und)
   }
 }
+
+void cpu_run(int64_t clock) {
+  clocks = clock;
+  if (cpu.exec_mode == EXEC_ARM)
+    cpu_run_arm();
+  else
+    cpu_run_thumb();
+}

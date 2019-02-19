@@ -15,13 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <gba.h>
-#include <log.h>
-#include <stdio.h>
+#include <ppu.h>
+void ppu_init(void) {}
+void ppu_update_draw_scanline(void) {}
+void ppu_draw_scanline(int32_t y) {}
+void ppu_draw_scanline_white(int32_t y) {}
+void ppu_update_register(uint32_t address) {}
 
-int main(int argc, char** argv) {
-    gba_init("../test/BIOS.GBA","../test/SUPERMAR.GBA");
-    cpu_run(100/*280896*/); // A frame
-    gba_delete();
-  return 0;
-}
+void util_buffer_to_RGB_24(void* dest) {}
+void util_buffer_to_RGB_32(void* dest) {}
