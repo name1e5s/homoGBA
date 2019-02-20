@@ -39,10 +39,10 @@
 #define COND_VC (!F_V)
 #define COND_HI ((F_C) && (!F_Z))
 #define COND_LS ((!F_C) || (F_Z))
-#define COND_GE ((!F_N) == (!F_V))
-#define COND_LT ((!F_N) != (!F_V))
-#define COND_GT ((!F_Z) && (!F_N) == (!F_V))
-#define COND_LE ((F_Z) || (!F_N) != (!F_V))
+#define COND_GE ((F_N) == (F_V))
+#define COND_LT ((F_N) != (F_V))
+#define COND_GT ((!F_Z) && (F_N) == (F_V))
+#define COND_LE ((F_Z) || (F_N) != (F_V))
 #define COND_AL 1
 
 #define SIGN(N) ((N) >> 31)

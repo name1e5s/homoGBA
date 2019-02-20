@@ -527,7 +527,8 @@ void register_write_16(uint32_t address, uint16_t value) {
       WIN(IN)
       WIN(OUT)
 
-          case MOSAIC : REG_MOSIAC = value;
+    case MOSAIC:
+      REG_MOSIAC = value;
       ppu_update_register(MOSAIC);
       return;
 

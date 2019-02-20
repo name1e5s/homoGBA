@@ -21,7 +21,7 @@
 
 int main(int argc, char** argv) {
     gba_init("../test/BIOS.GBA","../test/SUPERMAR.GBA");
-    cpu_run(100/*280896*/); // A frame
+    cpu_run(120/*280896*/); // A frame
     gba_delete();
   return 0;
 }

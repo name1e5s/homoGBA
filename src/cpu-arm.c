@@ -1513,6 +1513,8 @@ inline void cpu_run_arm() {
           "\t\tarm| opcode: 0x%08x PC: 0x%08x Type: %d 0x%08x 0x%08x 0x%08x",
           opcode, cpu.R[R_PC], cpu_decode_arm(opcode), cpu.R[R_SP], cpu.R[R_LR],
           cpu.R[0]);
+      log_trace("NZCV:%d%d%d%d", cpu.CPSR.N, cpu.CPSR.Z, cpu.CPSR.C,
+                cpu.CPSR.V);
       arm_code[cpu_decode_arm(opcode)](opcode & 0x0FFFFFFF);
     } else
       clocks -= get_access_cycles(isSeq, 1, cpu.R[R_PC]);
