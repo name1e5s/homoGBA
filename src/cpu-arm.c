@@ -237,6 +237,7 @@ ALU_3OP_BLOCK(mov,
               F_V,
               _carry,
               ,
+              log_trace("mov | Rd: %d IMM: %x", Rd, imm);
               cpu.R[Rd] = imm;)
 ALU_3OP_BLOCK(mvn,
               BIT(cpu.R[Rd], 31),
@@ -377,24 +378,24 @@ ALU_2OP_BLOCK(cmn,
 DECL(data_processing) {
   switch (((BIT(opcode, 25) << 1) | (BIT(opcode, 20)))) {
     case 0:
-      ALU_BLOCK(imm, )
-      break;
-    case 1:
-      ALU_BLOCK(imm, s)
-      break;
-    case 2:
       if (BIT(opcode, 4)) {
         ALU_BLOCK(rsr, )
       } else {
         ALU_BLOCK(rsi, )
       }
       break;
-    case 3:
+    case 1:
       if (BIT(opcode, 4)) {
         ALU_BLOCK(rsr, s)
       } else {
         ALU_BLOCK(rsi, s)
       }
+      break;
+    case 2:
+      ALU_BLOCK(imm, )
+      break;
+    case 3:
+      ALU_BLOCK(imm, s)
       break;
     default:
       // Fuck CLion.
@@ -632,7 +633,7 @@ DECL(single_transfer) {
   else
     offset = opcode & 0x00000FFF;
 
-  switch ((opcode >> 20) & 0x3F) {
+  switch ((opcode >> 20) & 0x1F) {
     case 0x00:
     case 0x02:
       memory_write_32(Rn_val, Rd_val);
@@ -1512,7 +1513,7 @@ inline void cpu_run_arm() {
           "\t\tarm| opcode: 0x%08x PC: 0x%08x Type: %d 0x%08x 0x%08x 0x%08x",
           opcode, cpu.R[R_PC], cpu_decode_arm(opcode), cpu.R[R_SP], cpu.R[R_LR],
           cpu.R[0]);
-      arm_code[cpu_decode_arm(opcode)](opcode);
+      arm_code[cpu_decode_arm(opcode)](opcode & 0x0FFFFFFF);
     } else
       clocks -= get_access_cycles(isSeq, 1, cpu.R[R_PC]);
     cpu.R[R_PC] += 4;

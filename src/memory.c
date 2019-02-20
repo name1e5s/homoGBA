@@ -369,7 +369,7 @@ void memory_write_8(uint32_t address, uint8_t value) {
     return;
   }
   if (address < 0x05000000) {
-    memory_write_8(address, value);
+    register_write_8(address, value);
     return;
   }
   if (address < 0x06000000) {
@@ -524,7 +524,8 @@ void register_write_16(uint32_t address, uint16_t value) {
       WIN(0V)
       WIN(1H)
       WIN(1V)
-      WIN(IN) WIN(OUT)
+      WIN(IN)
+      WIN(OUT)
 
           case MOSAIC : REG_MOSIAC = value;
       ppu_update_register(MOSAIC);
@@ -575,7 +576,7 @@ void register_write_16(uint32_t address, uint16_t value) {
     apu_register_write16(SND##NU##CNT_X, value); \
     return;
 
-          SND_(1) SND_(2) SND_(3) SND_(4) case SNDCNT_L : REG_SNDCNT_L = value;
+      SND_(1) SND_(2) SND_(3) SND_(4) case SNDCNT_L : REG_SNDCNT_L = value;
       apu_register_write16(SNDCNT_L, value);
       return;
     case SNDCNT_H:

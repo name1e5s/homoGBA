@@ -19,6 +19,7 @@
 #define CPU_ARM_H
 // Conditions
 #include <cpu.h>
+#include <log.h>
 #include <stdint.h>
 #define F_N (cpu.CPSR.N)
 #define F_Z (cpu.CPSR.Z)

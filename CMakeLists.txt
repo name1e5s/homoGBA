@@ -3,8 +3,6 @@ project(homoGBA)
 
 enable_testing()
 
-
-
 set(CMAKE_C_STANDARD 11)
 
 set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/out)
