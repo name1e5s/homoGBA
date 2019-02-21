@@ -1,0 +1,7 @@
+CREATE libdisas.a
+ADDLIB binutils-2.27/opcodes/libopcodes.a
+ADDLIB binutils-2.27/bfd/libbfd.a
+ADDLIB binutils-2.27/libiberty/libiberty.a
+ADDLIB libtmpdisas.a
+SAVE
+END
