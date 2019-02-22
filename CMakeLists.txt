@@ -13,7 +13,7 @@ add_executable(homo ${SOURCE_FILES})
 
 include_directories(include)
 include_directories(tools/log/log.c/src)
-
+include_directories(disas_INCLUDE_DIRS)
 
 add_subdirectory(src)
 add_subdirectory(test)

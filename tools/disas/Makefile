@@ -13,7 +13,7 @@ BFD_LIB = $(BINUTILS)/bfd/libbfd.a
 OPCODES_LIB = $(BINUTILS)/opcodes/libopcodes.a
 IBERTY_LIB = $(BINUTILS)/libiberty/libiberty.a
 TARGETS = "arm-linux-gnu armel-linux-gnu mipsel-linux-gnu"
-CFLAGS := -I$(BFD) -I$(BINUTILS)/include -O3 -Wall -Werror
+CFLAGS := -I$(BINUTILS)/include -I$(BFD) -O3 -Wall -Werror -DPACKAGE
 
 lib: binutils lib$(NAME).a
 
